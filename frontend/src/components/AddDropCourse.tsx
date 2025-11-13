@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { addDropService } from '../services/addDropService';
 import { academicCalendarService } from '../services/academicCalendarService';
+import { courseAPI, enrollmentAPI } from '../services/api';
 import type { AddDropRequest } from '../types';
 
 interface Course {
@@ -23,17 +24,13 @@ interface AddDropCourseProps {
     major?: string;
     year_level?: number;
   };
-  enrolledCourses: Course[];
-  availableCourses: Course[];
 }
 
 type TabType = 'add' | 'drop' | 'requests';
 
-export const AddDropCourse: React.FC<AddDropCourseProps> = ({
-  currentUser,
-  enrolledCourses,
-  availableCourses
-}) => {
+const AddDropCourse: React.FC<AddDropCourseProps> = ({ currentUser }) => {
+  const [enrolledCourses, setEnrolledCourses] = useState<Course[]>([]);
+  const [availableCourses, setAvailableCourses] = useState<Course[]>([]);
   const [activeTab, setActiveTab] = useState<TabType>('add');
   const [myRequests, setMyRequests] = useState<AddDropRequest[]>([]);
   const [loading, setLoading] = useState(false);
@@ -56,6 +53,7 @@ export const AddDropCourse: React.FC<AddDropCourseProps> = ({
   useEffect(() => {
     checkAddDropStatus();
     loadMyRequests();
+    loadCourses();
   }, []);
 
   const checkAddDropStatus = async () => {
@@ -77,6 +75,20 @@ export const AddDropCourse: React.FC<AddDropCourseProps> = ({
       setError('Failed to load your requests');
     } finally {
       setLoading(false);
+    }
+  };
+
+  const loadCourses = async () => {
+    try {
+      // Fetch available courses
+      const coursesResponse = await courseAPI.getAll();
+      setAvailableCourses(coursesResponse.data.data || []);
+
+      // Fetch enrolled courses
+      const enrolledResponse = await enrollmentAPI.getMyCourses();
+      setEnrolledCourses(enrolledResponse.data.data || []);
+    } catch (err) {
+      console.error('Failed to load courses:', err);
     }
   };
 
@@ -485,3 +497,5 @@ export const AddDropCourse: React.FC<AddDropCourseProps> = ({
     </div>
   );
 };
+
+export default AddDropCourse;
