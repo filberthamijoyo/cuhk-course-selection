@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { academicCalendarService } from '../services/academicCalendarService';
 import type { AcademicEvent, AddDropStatus } from '../types';
 
-export const AcademicCalendar: React.FC = () => {
+const AcademicCalendar: React.FC = () => {
   const [events, setEvents] = useState<AcademicEvent[]>([]);
   const [upcomingEvents, setUpcomingEvents] = useState<AcademicEvent[]>([]);
   const [addDropStatus, setAddDropStatus] = useState<AddDropStatus | null>(null);
@@ -293,3 +293,5 @@ export const AcademicCalendar: React.FC = () => {
     </div>
   );
 };
+
+export default AcademicCalendar;

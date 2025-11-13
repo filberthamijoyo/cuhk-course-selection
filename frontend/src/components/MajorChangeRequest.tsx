@@ -28,7 +28,7 @@ const AVAILABLE_MAJORS: Major[] = [
   { code: 'MKTG', name: 'Marketing', school: 'School of Management and Economics' },
 ];
 
-export const MajorChangeRequest: React.FC<MajorChangeRequestProps> = ({ currentUser }) => {
+const MajorChangeRequest: React.FC<MajorChangeRequestProps> = ({ currentUser }) => {
   const [myRequests, setMyRequests] = useState<MajorChange[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -412,3 +412,5 @@ export const MajorChangeRequest: React.FC<MajorChangeRequestProps> = ({ currentU
     </div>
   );
 };
+
+export default MajorChangeRequest;
