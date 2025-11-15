@@ -1,7 +1,8 @@
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { AuthProvider, useAuth } from './context/AuthContext';
-import { Layout } from './components/Layout';
+import { ThemeProvider } from './contexts/ThemeContext';
+import { MainLayout } from './components/layout';
 import { Login } from './pages/Login';
 import { Dashboard } from './pages/Dashboard';
 import { CourseList } from './pages/CourseList';
@@ -26,6 +27,7 @@ import AcademicCalendarPage from './pages/AcademicCalendarPage';
 import AddDropPage from './pages/AddDropPage';
 import MajorChangePage from './pages/MajorChangePage';
 import EvaluationsPage from './pages/EvaluationsPage';
+import { ShoppingCart } from './pages/ShoppingCart';
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -71,8 +73,9 @@ function RoleDashboard() {
 function App() {
   return (
     <QueryClientProvider client={queryClient}>
-      <AuthProvider>
-        <BrowserRouter>
+      <ThemeProvider>
+        <AuthProvider>
+          <BrowserRouter>
           <Routes>
             <Route path="/login" element={<Login />} />
 
@@ -81,9 +84,9 @@ function App() {
               path="/"
               element={
                 <ProtectedRoute>
-                  <Layout>
+                  <MainLayout>
                     <RoleDashboard />
-                  </Layout>
+                  </MainLayout>
                 </ProtectedRoute>
               }
             />
@@ -93,9 +96,9 @@ function App() {
               path="/courses"
               element={
                 <ProtectedRoute>
-                  <Layout>
+                  <MainLayout>
                     <CourseList />
-                  </Layout>
+                  </MainLayout>
                 </ProtectedRoute>
               }
             />
@@ -103,9 +106,19 @@ function App() {
               path="/enrollments"
               element={
                 <ProtectedRoute>
-                  <Layout>
+                  <MainLayout>
                     <MyEnrollments />
-                  </Layout>
+                  </MainLayout>
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/cart"
+              element={
+                <ProtectedRoute>
+                  <MainLayout>
+                    <ShoppingCart />
+                  </MainLayout>
                 </ProtectedRoute>
               }
             />
@@ -115,9 +128,9 @@ function App() {
               path="/academic/grades"
               element={
                 <ProtectedRoute>
-                  <Layout>
+                  <MainLayout>
                     <MyGrades />
-                  </Layout>
+                  </MainLayout>
                 </ProtectedRoute>
               }
             />
@@ -125,9 +138,9 @@ function App() {
               path="/academic/transcript"
               element={
                 <ProtectedRoute>
-                  <Layout>
+                  <MainLayout>
                     <Transcript />
-                  </Layout>
+                  </MainLayout>
                 </ProtectedRoute>
               }
             />
@@ -137,9 +150,9 @@ function App() {
               path="/financial"
               element={
                 <ProtectedRoute>
-                  <Layout>
+                  <MainLayout>
                     <FinancialInfo />
-                  </Layout>
+                  </MainLayout>
                 </ProtectedRoute>
               }
             />
@@ -149,9 +162,9 @@ function App() {
               path="/personal"
               element={
                 <ProtectedRoute>
-                  <Layout>
+                  <MainLayout>
                     <PersonalInfo />
-                  </Layout>
+                  </MainLayout>
                 </ProtectedRoute>
               }
             />
@@ -161,9 +174,9 @@ function App() {
               path="/planning"
               element={
                 <ProtectedRoute>
-                  <Layout>
+                  <MainLayout>
                     <DegreePlanning />
-                  </Layout>
+                  </MainLayout>
                 </ProtectedRoute>
               }
             />
@@ -173,9 +186,9 @@ function App() {
               path="/applications"
               element={
                 <ProtectedRoute>
-                  <Layout>
+                  <MainLayout>
                     <Applications />
-                  </Layout>
+                  </MainLayout>
                 </ProtectedRoute>
               }
             />
@@ -185,9 +198,9 @@ function App() {
               path="/campus"
               element={
                 <ProtectedRoute>
-                  <Layout>
+                  <MainLayout>
                     <CampusInfo />
-                  </Layout>
+                  </MainLayout>
                 </ProtectedRoute>
               }
             />
@@ -197,9 +210,9 @@ function App() {
               path="/academic-calendar"
               element={
                 <ProtectedRoute>
-                  <Layout>
+                  <MainLayout>
                     <AcademicCalendarPage />
-                  </Layout>
+                  </MainLayout>
                 </ProtectedRoute>
               }
             />
@@ -209,9 +222,9 @@ function App() {
               path="/add-drop"
               element={
                 <ProtectedRoute>
-                  <Layout>
+                  <MainLayout>
                     <AddDropPage />
-                  </Layout>
+                  </MainLayout>
                 </ProtectedRoute>
               }
             />
@@ -221,9 +234,9 @@ function App() {
               path="/major-change"
               element={
                 <ProtectedRoute>
-                  <Layout>
+                  <MainLayout>
                     <MajorChangePage />
-                  </Layout>
+                  </MainLayout>
                 </ProtectedRoute>
               }
             />
@@ -233,9 +246,9 @@ function App() {
               path="/evaluations"
               element={
                 <ProtectedRoute>
-                  <Layout>
+                  <MainLayout>
                     <EvaluationsPage />
-                  </Layout>
+                  </MainLayout>
                 </ProtectedRoute>
               }
             />
@@ -245,9 +258,9 @@ function App() {
               path="/faculty"
               element={
                 <ProtectedRoute>
-                  <Layout>
+                  <MainLayout>
                     <FacultyDashboard />
-                  </Layout>
+                  </MainLayout>
                 </ProtectedRoute>
               }
             />
@@ -255,9 +268,9 @@ function App() {
               path="/faculty/courses"
               element={
                 <ProtectedRoute>
-                  <Layout>
+                  <MainLayout>
                     <FacultyDashboard />
-                  </Layout>
+                  </MainLayout>
                 </ProtectedRoute>
               }
             />
@@ -265,9 +278,9 @@ function App() {
               path="/faculty/courses/:courseId/grades"
               element={
                 <ProtectedRoute>
-                  <Layout>
+                  <MainLayout>
                     <GradeSubmission />
-                  </Layout>
+                  </MainLayout>
                 </ProtectedRoute>
               }
             />
@@ -275,8 +288,9 @@ function App() {
             {/* Catch all - redirect to home */}
             <Route path="*" element={<Navigate to="/" />} />
           </Routes>
-        </BrowserRouter>
-      </AuthProvider>
+          </BrowserRouter>
+        </AuthProvider>
+      </ThemeProvider>
     </QueryClientProvider>
   );
 }
