@@ -38,19 +38,48 @@ export function Transcript() {
     try {
       const response = await academicAPI.generateTranscriptPDF();
 
-      // Create blob from response data
-      const blob = new Blob([response.data], { type: 'application/pdf' });
+      // Check if response data exists
+      if (!response.data) {
+        throw new Error('No PDF data received from server');
+      }
+
+      // The response.data is already a Blob when responseType is 'blob'
+      let blob = response.data instanceof Blob
+        ? response.data
+        : new Blob([response.data], { type: 'application/pdf' });
+
+      // Verify it's a valid blob with content
+      if (blob.size === 0) {
+        throw new Error('Received empty PDF file');
+      }
+
+      // Check if the blob is actually a JSON error response
+      if (blob.type === 'application/json' || blob.type === 'text/plain') {
+        const text = await blob.text();
+        try {
+          const errorData = JSON.parse(text);
+          throw new Error(errorData.error || errorData.message || 'Server error while generating PDF');
+        } catch (parseError) {
+          throw new Error(`Server returned an error: ${text}`);
+        }
+      }
+
       const url = window.URL.createObjectURL(blob);
       const a = document.createElement('a');
       a.href = url;
       a.download = `transcript_${user?.userIdentifier}_${new Date().toISOString().split('T')[0]}.pdf`;
       document.body.appendChild(a);
       a.click();
-      window.URL.revokeObjectURL(url);
-      document.body.removeChild(a);
-    } catch (error) {
+
+      // Clean up
+      setTimeout(() => {
+        window.URL.revokeObjectURL(url);
+        document.body.removeChild(a);
+      }, 100);
+    } catch (error: any) {
       console.error('Error downloading PDF:', error);
-      alert('Failed to download PDF. Please try again.');
+      const errorMessage = error.response?.data?.error || error.message || 'Failed to download PDF. Please try again.';
+      alert(errorMessage);
     }
   };
 
