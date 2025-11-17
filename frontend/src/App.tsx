@@ -62,7 +62,7 @@ function RoleDashboard() {
     return <FacultyDashboard />;
   }
 
-  if (user?.role === 'ADMIN') {
+  if (user?.role === 'ADMINISTRATOR') {
     return <Dashboard />; // Admin uses the existing Dashboard
   }
 
@@ -144,7 +144,7 @@ function App() {
               }
             />
 
-            {/* Personal Info */}}
+            {/* Personal Info */}
             <Route
               path="/personal"
               element={
