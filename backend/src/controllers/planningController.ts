@@ -183,20 +183,44 @@ export async function getProgress(req: AuthRequest, res: Response) {
     );
 
     const totalCreditsEarned = enrollmentsWithPublishedGrades.reduce((sum, e) => sum + e.courses.credits, 0);
-    const latestTranscript = student.users_students_user_idTousers.transcripts[0];
+
+    // Calculate GPA from actual grades
+    let totalQualityPoints = 0;
+    let totalCreditsForGPA = 0;
+
+    enrollmentsWithPublishedGrades.forEach(enrollment => {
+      if (enrollment.grades?.grade_points !== null && enrollment.grades?.grade_points !== undefined) {
+        const credits = enrollment.courses.credits || 0;
+        totalQualityPoints += enrollment.grades.grade_points * credits;
+        totalCreditsForGPA += credits;
+      }
+    });
+
+    const currentGPA = totalCreditsForGPA > 0 ? totalQualityPoints / totalCreditsForGPA : 0;
+
+    // Determine academic standing
+    let academicStanding = 'N/A';
+    if (currentGPA >= 3.5) academicStanding = 'Dean\'s List';
+    else if (currentGPA >= 3.0) academicStanding = 'Good Standing';
+    else if (currentGPA >= 2.0) academicStanding = 'Satisfactory';
+    else if (currentGPA > 0) academicStanding = 'Academic Warning';
+
+    const totalCreditsRequired = student.majors?.total_credits || 120;
+    const majorName = student.majors?.name || 'Undeclared';
 
     res.json({
       success: true,
       data: {
-        major: student.majors?.name,
+        major: majorName,
+        majorName: majorName,
         year: student.year,
         expectedGraduation: student.expected_grad,
-        totalCreditsRequired: student.majors?.total_credits || 120,
+        totalCreditsRequired: totalCreditsRequired,
         totalCreditsEarned,
-        creditsRemaining: (student.majors?.total_credits || 120) - totalCreditsEarned,
-        percentageComplete: (totalCreditsEarned / (student.majors?.total_credits || 120)) * 100,
-        gpa: latestTranscript?.gpa || 0,
-        academicStanding: latestTranscript?.academic_standing || 'N/A',
+        creditsRemaining: totalCreditsRequired - totalCreditsEarned,
+        percentageComplete: (totalCreditsEarned / totalCreditsRequired) * 100,
+        currentGPA: Math.round(currentGPA * 100) / 100,
+        academicStanding: academicStanding,
       },
     });
   } catch (error) {

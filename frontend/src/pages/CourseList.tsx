@@ -27,6 +27,7 @@ interface Course {
 export function CourseList() {
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedDepartment, setSelectedDepartment] = useState('');
+  const [expandedDepartments, setExpandedDepartments] = useState<Set<string>>(new Set());
 
   const { data: courses, isLoading } = useQuery<Course[]>({
     queryKey: ['courses'],
@@ -76,6 +77,36 @@ export function CourseList() {
 
     return matchesSearch && matchesDepartment;
   });
+
+  // Group courses by department
+  const coursesByDepartment = filteredCourses?.reduce((acc, course) => {
+    const dept = course.department;
+    if (!acc[dept]) {
+      acc[dept] = [];
+    }
+    acc[dept].push(course);
+    return acc;
+  }, {} as Record<string, Course[]>);
+
+  const toggleDepartment = (dept: string) => {
+    const newExpanded = new Set(expandedDepartments);
+    if (newExpanded.has(dept)) {
+      newExpanded.delete(dept);
+    } else {
+      newExpanded.add(dept);
+    }
+    setExpandedDepartments(newExpanded);
+  };
+
+  const expandAll = () => {
+    if (coursesByDepartment) {
+      setExpandedDepartments(new Set(Object.keys(coursesByDepartment)));
+    }
+  };
+
+  const collapseAll = () => {
+    setExpandedDepartments(new Set());
+  };
 
   if (isLoading) {
     return (
@@ -128,20 +159,77 @@ export function CourseList() {
               </select>
             </div>
           </div>
-          <div className="mt-4 text-sm text-gray-600">
-            Showing {filteredCourses?.length || 0} of {courses?.length || 0} courses
+          <div className="mt-4 flex items-center justify-between">
+            <div className="text-sm text-gray-600">
+              Showing {filteredCourses?.length || 0} courses across {Object.keys(coursesByDepartment || {}).length} departments
+            </div>
+            <div className="flex gap-2">
+              <button
+                onClick={expandAll}
+                className="text-sm text-primary hover:text-primary/80 font-medium"
+              >
+                Expand All
+              </button>
+              <span className="text-gray-400">|</span>
+              <button
+                onClick={collapseAll}
+                className="text-sm text-primary hover:text-primary/80 font-medium"
+              >
+                Collapse All
+              </button>
+            </div>
           </div>
         </div>
 
-        {/* Course Grid */}
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-          {filteredCourses?.map((course) => (
-            <CourseCard key={course.id} course={course} />
-          ))}
-        </div>
+        {/* Courses Grouped by Department */}
+        {coursesByDepartment && Object.keys(coursesByDepartment).length > 0 ? (
+          <div className="space-y-4">
+            {Object.entries(coursesByDepartment)
+              .sort(([deptA], [deptB]) => deptA.localeCompare(deptB))
+              .map(([department, deptCourses]) => {
+                const isExpanded = expandedDepartments.has(department);
+                return (
+                  <div key={department} className="bg-white rounded-lg shadow-md border border-gray-200 overflow-hidden">
+                    {/* Department Header */}
+                    <button
+                      onClick={() => toggleDepartment(department)}
+                      className="w-full px-6 py-4 flex items-center justify-between hover:bg-gray-50 transition-colors"
+                    >
+                      <div className="flex items-center gap-3">
+                        <div className="flex items-center justify-center w-10 h-10 rounded-lg bg-primary/10 text-primary font-semibold">
+                          {department.substring(0, 2).toUpperCase()}
+                        </div>
+                        <div className="text-left">
+                          <h3 className="text-lg font-semibold text-gray-900">{department}</h3>
+                          <p className="text-sm text-gray-600">{deptCourses.length} course{deptCourses.length !== 1 ? 's' : ''} available</p>
+                        </div>
+                      </div>
+                      <svg
+                        className={`w-5 h-5 text-gray-400 transition-transform ${isExpanded ? 'rotate-180' : ''}`}
+                        fill="none"
+                        stroke="currentColor"
+                        viewBox="0 0 24 24"
+                      >
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                      </svg>
+                    </button>
 
-        {filteredCourses?.length === 0 && (
-          <div className="text-center py-12">
+                    {/* Department Courses */}
+                    {isExpanded && (
+                      <div className="px-6 py-4 bg-gray-50 border-t border-gray-200">
+                        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+                          {deptCourses.map((course) => (
+                            <CourseCard key={course.id} course={course} />
+                          ))}
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                );
+              })}
+          </div>
+        ) : (
+          <div className="text-center py-12 bg-white rounded-lg shadow-md">
             <p className="text-gray-500 text-lg">No courses found matching your criteria.</p>
           </div>
         )}

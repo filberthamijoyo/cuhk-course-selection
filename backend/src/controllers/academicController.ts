@@ -439,37 +439,55 @@ export async function getGPA(req: AuthRequest, res: Response): Promise<void> {
   try {
     const userId = req.user!.id;
 
-    const latestTranscript = await prisma.transcripts.findFirst({
-      where: { user_id: userId },
-      orderBy: {
-        generated_at: 'desc',
+    // Calculate GPA directly from grades
+    const enrollmentsWithGrades = await prisma.enrollments.findMany({
+      where: {
+        user_id: userId,
+        grades: {
+          status: 'PUBLISHED',
+          grade_points: {
+            not: null
+          }
+        }
+      },
+      include: {
+        grades: true,
+        courses: {
+          select: {
+            credits: true,
+          }
+        }
       },
     });
 
-    if (!latestTranscript) {
-      res.json({
-        success: true,
-        data: {
-          cumulativeGPA: 0,
-          currentTermGPA: 0,
-          totalCredits: 0,
-          earnedCredits: 0,
-          academicStanding: 'N/A',
-          message: 'No transcript data available',
-        },
-      });
-      return;
-    }
+    let totalQualityPoints = 0;
+    let totalCredits = 0;
+
+    enrollmentsWithGrades.forEach(enrollment => {
+      if (enrollment.grades?.grade_points !== null && enrollment.grades?.grade_points !== undefined) {
+        const credits = enrollment.courses.credits || 0;
+        totalQualityPoints += enrollment.grades.grade_points * credits;
+        totalCredits += credits;
+      }
+    });
+
+    const cumulativeGPA = totalCredits > 0 ? totalQualityPoints / totalCredits : 0;
+
+    // Determine academic standing
+    let academicStanding = 'N/A';
+    if (cumulativeGPA >= 3.5) academicStanding = 'Dean\'s List';
+    else if (cumulativeGPA >= 3.0) academicStanding = 'Good Standing';
+    else if (cumulativeGPA >= 2.0) academicStanding = 'Satisfactory';
+    else if (cumulativeGPA > 0) academicStanding = 'Academic Warning';
 
     res.json({
       success: true,
       data: {
-        cumulativeGPA: latestTranscript.gpa,
-        currentTermGPA: latestTranscript.term_gpa,
-        totalCredits: latestTranscript.total_credits,
-        earnedCredits: latestTranscript.earned_credits,
-        academicStanding: latestTranscript.academic_standing,
-        qualityPoints: latestTranscript.quality_points,
+        cumulativeGPA: Math.round(cumulativeGPA * 100) / 100,
+        totalCredits: totalCredits,
+        earnedCredits: totalCredits,
+        academicStanding: academicStanding,
+        qualityPoints: Math.round(totalQualityPoints * 100) / 100,
       },
     });
   } catch (error: any) {
