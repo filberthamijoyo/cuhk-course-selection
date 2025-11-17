@@ -59,7 +59,7 @@ export function MyGrades() {
         <div className="bg-gradient-to-br from-blue-500 to-blue-600 rounded-lg shadow-lg p-6 text-white">
           <div className="text-sm font-medium opacity-90">Cumulative GPA</div>
           <div className="mt-2 text-4xl font-bold">
-            {gpaData?.cumulativeGPA.toFixed(2) || '—'}
+            {gpaData?.cumulativeGPA?.toFixed(2) || '—'}
           </div>
           <div className="mt-1 text-sm opacity-90">{gpaData?.academicStanding}</div>
         </div>
@@ -67,7 +67,7 @@ export function MyGrades() {
         <div className="bg-card border border-border rounded-lg shadow p-6 border-l-4 border-green-500">
           <div className="text-sm font-medium text-muted-foreground">Current Term GPA</div>
           <div className="mt-2 text-3xl font-bold text-foreground">
-            {gpaData?.currentTermGPA.toFixed(2) || '—'}
+            {gpaData?.currentTermGPA?.toFixed(2) || '—'}
           </div>
         </div>
 
