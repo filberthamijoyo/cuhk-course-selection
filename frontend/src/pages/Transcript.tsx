@@ -36,19 +36,10 @@ export function Transcript() {
 
   const handleDownloadPDF = async () => {
     try {
-      const token = localStorage.getItem('token');
-      const response = await fetch('http://localhost:5000/api/academic/transcript/pdf', {
-        method: 'GET',
-        headers: {
-          'Authorization': `Bearer ${token}`,
-        },
-      });
+      const response = await academicAPI.generateTranscriptPDF();
 
-      if (!response.ok) {
-        throw new Error('Failed to download PDF');
-      }
-
-      const blob = await response.blob();
+      // Create blob from response data
+      const blob = new Blob([response.data], { type: 'application/pdf' });
       const url = window.URL.createObjectURL(blob);
       const a = document.createElement('a');
       a.href = url;
