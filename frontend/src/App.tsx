@@ -21,6 +21,14 @@ import { Transcript } from './pages/Transcript';
 import { FacultyDashboard } from './pages/FacultyDashboard';
 import { GradeSubmission } from './pages/GradeSubmission';
 
+// Admin Pages
+import { AdminDashboard } from './pages/admin/AdminDashboard';
+import { UserManagement } from './pages/admin/UserManagement';
+import { CourseManagement } from './pages/admin/CourseManagement';
+import { ProgramManagement } from './pages/admin/ProgramManagement';
+import { EnrollmentManagement } from './pages/admin/EnrollmentManagement';
+import { Reports } from './pages/admin/Reports';
+
 // New Feature Pages
 import AcademicCalendarPage from './pages/AcademicCalendarPage';
 import AddDropPage from './pages/AddDropPage';
@@ -63,7 +71,7 @@ function RoleDashboard() {
   }
 
   if (user?.role === 'ADMINISTRATOR') {
-    return <Dashboard />; // Admin uses the existing Dashboard
+    return <AdminDashboard />;
   }
 
   return <StudentDashboard />;
@@ -235,6 +243,78 @@ function App() {
                 <ProtectedRoute>
                   <MainLayout>
                     <EvaluationsPage />
+                  </MainLayout>
+                </ProtectedRoute>
+              }
+            />
+
+            {/* Admin Routes */}
+            <Route
+              path="/admin"
+              element={
+                <ProtectedRoute>
+                  <MainLayout>
+                    <AdminDashboard />
+                  </MainLayout>
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/admin/users"
+              element={
+                <ProtectedRoute>
+                  <MainLayout>
+                    <UserManagement />
+                  </MainLayout>
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/admin/courses"
+              element={
+                <ProtectedRoute>
+                  <MainLayout>
+                    <CourseManagement />
+                  </MainLayout>
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/admin/programs"
+              element={
+                <ProtectedRoute>
+                  <MainLayout>
+                    <ProgramManagement />
+                  </MainLayout>
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/admin/enrollments"
+              element={
+                <ProtectedRoute>
+                  <MainLayout>
+                    <EnrollmentManagement />
+                  </MainLayout>
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/admin/reports"
+              element={
+                <ProtectedRoute>
+                  <MainLayout>
+                    <Reports />
+                  </MainLayout>
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/admin/applications"
+              element={
+                <ProtectedRoute>
+                  <MainLayout>
+                    <Applications />
                   </MainLayout>
                 </ProtectedRoute>
               }

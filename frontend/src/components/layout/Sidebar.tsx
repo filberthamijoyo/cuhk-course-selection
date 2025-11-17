@@ -16,6 +16,10 @@ import {
   Star,
   ChevronRight,
   ShoppingCart,
+  Users,
+  GraduationCap,
+  Settings,
+  PieChart,
 } from 'lucide-react';
 
 interface SidebarProps {
@@ -54,8 +58,24 @@ export function Sidebar({ isOpen, onClose }: SidebarProps) {
     { path: '/campus', label: 'Campus Info', icon: Info },
   ];
 
+  const adminNavItems = [
+    { path: '/admin', label: 'Admin Dashboard', icon: LayoutDashboard },
+    { separator: true, label: 'Management' },
+    { path: '/admin/users', label: 'User Management', icon: Users },
+    { path: '/admin/courses', label: 'Course Management', icon: BookOpen },
+    { path: '/admin/programs', label: 'Program Management', icon: GraduationCap },
+    { path: '/admin/enrollments', label: 'Enrollment Management', icon: FileText },
+    { separator: true, label: 'Analytics & Reports' },
+    { path: '/admin/reports', label: 'Reports & Analytics', icon: PieChart },
+    { separator: true, label: 'Applications' },
+    { path: '/admin/applications', label: 'Review Applications', icon: Mail },
+    { separator: true, label: 'System' },
+    { path: '/campus', label: 'Campus Info', icon: Info },
+  ];
+
   const getNavItems = () => {
     if (user?.role === 'INSTRUCTOR') return facultyNavItems;
+    if (user?.role === 'ADMINISTRATOR') return adminNavItems;
     return studentNavItems;
   };
 

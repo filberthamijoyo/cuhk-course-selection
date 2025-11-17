@@ -88,9 +88,38 @@ export const enrollmentAPI = {
 
 // Admin API
 export const adminAPI = {
+  // Statistics
+  getStatistics: () => api.get('/admin/statistics'),
   getStats: () => api.get('/admin/stats'),
+
+  // User Management
+  getAllUsers: (params?: { role?: string; page?: number; limit?: number }) =>
+    api.get('/admin/users', { params }),
+  createUser: (data: any) => api.post('/admin/users', data),
+  updateUser: (id: number, data: any) => api.put(`/admin/users/${id}`, data),
+  deleteUser: (id: number) => api.delete(`/admin/users/${id}`),
+
+  // Course Management
+  getAllCourses: () => api.get('/admin/courses'),
+  createCourse: (data: any) => api.post('/admin/courses', data),
+  updateCourse: (id: number, data: any) => api.put(`/admin/courses/${id}`, data),
+  deleteCourse: (id: number) => api.delete(`/admin/courses/${id}`),
+  getCourseEnrollments: (id: number) => api.get(`/admin/courses/${id}/enrollments`),
+
+  // Program Management
+  getAllPrograms: () => api.get('/admin/programs'),
+  createProgram: (data: any) => api.post('/admin/programs', data),
+  updateProgram: (id: number, data: any) => api.put(`/admin/programs/${id}`, data),
+  deleteProgram: (id: number) => api.delete(`/admin/programs/${id}`),
+
+  // Enrollment Management
   getAllEnrollments: () => api.get('/admin/enrollments'),
   updateEnrollment: (id: number, data: any) => api.put(`/admin/enrollments/${id}`, data),
+  deleteEnrollment: (id: number) => api.delete(`/admin/enrollments/${id}`),
+
+  // Reports
+  getReports: () => api.get('/admin/reports'),
+  exportReport: (type: string) => api.get(`/admin/reports/export/${type}`),
 };
 
 // Academic Records API
