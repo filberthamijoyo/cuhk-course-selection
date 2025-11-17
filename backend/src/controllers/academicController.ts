@@ -360,14 +360,12 @@ export async function getUnofficialTranscript(req: AuthRequest, res: Response) {
 }
 
 /**
- * Generate PDF transcript (placeholder - returns data for PDF generation)
+ * Generate PDF transcript
  */
 export async function generateTranscriptPDF(req: AuthRequest, res: Response) {
   try {
     const userId = req.user!.id;
-
-    // This would typically generate a PDF, but for now we'll return the data
-    // In a production app, you'd use a library like pdfkit or puppeteer
+    const PDFDocument = require('pdfkit');
 
     const user = await prisma.users.findUnique({
       where: { id: userId },
@@ -377,29 +375,32 @@ export async function generateTranscriptPDF(req: AuthRequest, res: Response) {
             majors: true,
           },
         },
-        transcripts: {
-          orderBy: [
-            { year: 'asc' },
-            { semester: 'asc' },
-          ],
-        },
       },
     });
 
-    if (!user) {
-      throw new AppError('User not found', 404);
+    if (!user || !user.students_students_user_idTousers) {
+      throw new AppError('Student record not found', 404);
     }
 
+    const student = user.students_students_user_idTousers;
+
+    // Get all grades grouped by term
     const enrollments = await prisma.enrollments.findMany({
       where: {
         user_id: userId,
         grades: {
-          status: 'PUBLISHED',
+          some: {
+            status: 'PUBLISHED',
+          },
         },
       },
       include: {
         courses: true,
-        grades: true,
+        grades: {
+          where: {
+            status: 'PUBLISHED',
+          },
+        },
       },
       orderBy: [
         { courses: { year: 'asc' } },
@@ -407,26 +408,145 @@ export async function generateTranscriptPDF(req: AuthRequest, res: Response) {
       ],
     });
 
-    res.json({
-      success: true,
-      message: 'PDF generation would happen here',
-      data: {
-        student: user.students_students_user_idTousers,
-        transcripts: user.transcripts,
-        courses: enrollments,
-      },
+    // Calculate GPA
+    let totalCredits = 0;
+    let totalQualityPoints = 0;
+
+    enrollments.forEach((enrollment) => {
+      if (enrollment.grades && enrollment.grades.length > 0) {
+        const grade = enrollment.grades[0];
+        totalCredits += enrollment.courses.credits;
+        totalQualityPoints += grade.grade_points * enrollment.courses.credits;
+      }
     });
+
+    const cumulativeGPA = totalCredits > 0 ? (totalQualityPoints / totalCredits).toFixed(2) : '0.00';
+
+    // Create PDF document
+    const doc = new PDFDocument({ size: 'LETTER', margin: 50 });
+
+    // Set response headers
+    res.setHeader('Content-Type', 'application/pdf');
+    res.setHeader(
+      'Content-Disposition',
+      `attachment; filename=transcript_${user.user_identifier}_${new Date().toISOString().split('T')[0]}.pdf`
+    );
+
+    // Pipe PDF to response
+    doc.pipe(res);
+
+    // Header
+    doc.fontSize(20).text('OFFICIAL ACADEMIC TRANSCRIPT', { align: 'center' });
+    doc.fontSize(16).text('The Chinese University of Hong Kong, Shenzhen', { align: 'center' });
+    doc.moveDown();
+
+    // Student Information
+    doc.fontSize(12).text('STUDENT INFORMATION', { underline: true });
+    doc.moveDown(0.5);
+    doc.fontSize(10);
+    doc.text(`Name: ${user.full_name}`);
+    doc.text(`Student ID: ${user.user_identifier}`);
+    doc.text(`Email: ${user.email}`);
+    if (student.majors) {
+      doc.text(`Major: ${student.majors.major_name}`);
+    }
+    doc.text(`Year Level: ${student.year_level || 'N/A'}`);
+    doc.moveDown();
+
+    // Academic Summary
+    doc.fontSize(12).text('ACADEMIC SUMMARY', { underline: true });
+    doc.moveDown(0.5);
+    doc.fontSize(10);
+    doc.text(`Cumulative GPA: ${cumulativeGPA}`);
+    doc.text(`Total Credits Earned: ${totalCredits}`);
+    doc.moveDown();
+
+    // Group courses by term
+    const coursesByTerm: Record<string, any[]> = {};
+    enrollments.forEach((enrollment) => {
+      const termKey = `${enrollment.courses.semester} ${enrollment.courses.year}`;
+      if (!coursesByTerm[termKey]) {
+        coursesByTerm[termKey] = [];
+      }
+      coursesByTerm[termKey].push(enrollment);
+    });
+
+    // Course History
+    doc.fontSize(12).text('COURSE HISTORY', { underline: true });
+    doc.moveDown(0.5);
+
+    Object.entries(coursesByTerm).forEach(([term, courses]) => {
+      doc.fontSize(11).text(term, { underline: true });
+      doc.moveDown(0.3);
+
+      // Table header
+      doc.fontSize(9);
+      const tableTop = doc.y;
+      const col1 = 50;
+      const col2 = 140;
+      const col3 = 370;
+      const col4 = 430;
+      const col5 = 490;
+
+      doc.text('Course Code', col1, tableTop);
+      doc.text('Course Name', col2, tableTop);
+      doc.text('Credits', col3, tableTop);
+      doc.text('Grade', col4, tableTop);
+      doc.text('Points', col5, tableTop);
+
+      doc.moveDown(0.5);
+
+      // Draw line under header
+      doc.moveTo(col1, doc.y).lineTo(550, doc.y).stroke();
+      doc.moveDown(0.3);
+
+      let termCredits = 0;
+      let termPoints = 0;
+
+      courses.forEach((enrollment) => {
+        const course = enrollment.courses;
+        const grade = enrollment.grades[0];
+        const currentY = doc.y;
+
+        doc.text(course.course_code, col1, currentY);
+        doc.text(course.course_name.substring(0, 30), col2, currentY);
+        doc.text(course.credits.toString(), col3, currentY);
+        doc.text(grade.letter_grade, col4, currentY);
+        doc.text(grade.grade_points.toFixed(2), col5, currentY);
+
+        termCredits += course.credits;
+        termPoints += grade.grade_points * course.credits;
+
+        doc.moveDown(0.8);
+      });
+
+      // Term summary
+      const termGPA = termCredits > 0 ? (termPoints / termCredits).toFixed(2) : '0.00';
+      doc.moveDown(0.3);
+      doc.fontSize(10);
+      doc.text(`Term Credits: ${termCredits} | Term GPA: ${termGPA}`, { align: 'right' });
+      doc.moveDown();
+    });
+
+    // Footer
+    doc.moveDown(2);
+    doc.fontSize(8);
+    doc.text(`Generated on: ${new Date().toLocaleDateString()}`, { align: 'center' });
+    doc.text('This is an official transcript', { align: 'center' });
+
+    // Finalize PDF
+    doc.end();
   } catch (error) {
     if (error instanceof AppError) {
       res.status(error.statusCode).json({
         success: false,
-        message: error.message,
+        error: error.message,
       });
     } else {
       console.error('Generate transcript PDF error:', error);
       res.status(500).json({
         success: false,
-        message: 'Failed to generate PDF',
+        error: 'Failed to generate PDF',
       });
     }
   }
