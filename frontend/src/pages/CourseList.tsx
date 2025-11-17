@@ -120,15 +120,15 @@ export function CourseList() {
     <div className="max-w-7xl mx-auto py-6 sm:px-6 lg:px-8">
       <div className="px-4 py-6 sm:px-0">
         <div className="mb-6">
-          <h2 className="text-3xl font-bold text-gray-900 mb-2">Browse Courses</h2>
-          <p className="text-gray-600">Fall 2025 Course Offerings</p>
+          <h2 className="text-3xl font-bold text-foreground mb-2">Browse Courses</h2>
+          <p className="text-muted-foreground">Fall 2025 Course Offerings</p>
         </div>
 
         {/* Search and Filters */}
         <div className="card mb-6">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
-              <label htmlFor="search" className="block text-sm font-medium text-gray-700 mb-1">
+              <label htmlFor="search" className="block text-sm font-medium text-foreground mb-1">
                 Search Courses
               </label>
               <input
@@ -141,7 +141,7 @@ export function CourseList() {
               />
             </div>
             <div>
-              <label htmlFor="department" className="block text-sm font-medium text-gray-700 mb-1">
+              <label htmlFor="department" className="block text-sm font-medium text-foreground mb-1">
                 Department
               </label>
               <select
@@ -160,7 +160,7 @@ export function CourseList() {
             </div>
           </div>
           <div className="mt-4 flex items-center justify-between">
-            <div className="text-sm text-gray-600">
+            <div className="text-sm text-muted-foreground">
               Showing {filteredCourses?.length || 0} courses across {Object.keys(coursesByDepartment || {}).length} departments
             </div>
             <div className="flex gap-2">
@@ -170,7 +170,7 @@ export function CourseList() {
               >
                 Expand All
               </button>
-              <span className="text-gray-400">|</span>
+              <span className="text-muted-foreground">|</span>
               <button
                 onClick={collapseAll}
                 className="text-sm text-primary hover:text-primary/80 font-medium"
@@ -189,23 +189,23 @@ export function CourseList() {
               .map(([department, deptCourses]) => {
                 const isExpanded = expandedDepartments.has(department);
                 return (
-                  <div key={department} className="bg-white rounded-lg shadow-md border border-gray-200 overflow-hidden">
+                  <div key={department} className="bg-card rounded-lg shadow-md border border-border overflow-hidden">
                     {/* Department Header */}
                     <button
                       onClick={() => toggleDepartment(department)}
-                      className="w-full px-6 py-4 flex items-center justify-between hover:bg-gray-50 transition-colors"
+                      className="w-full px-6 py-4 flex items-center justify-between hover:bg-muted/50 transition-colors"
                     >
                       <div className="flex items-center gap-3">
                         <div className="flex items-center justify-center w-10 h-10 rounded-lg bg-primary/10 text-primary font-semibold">
                           {department.substring(0, 2).toUpperCase()}
                         </div>
                         <div className="text-left">
-                          <h3 className="text-lg font-semibold text-gray-900">{department}</h3>
-                          <p className="text-sm text-gray-600">{deptCourses.length} course{deptCourses.length !== 1 ? 's' : ''} available</p>
+                          <h3 className="text-lg font-semibold text-foreground">{department}</h3>
+                          <p className="text-sm text-muted-foreground">{deptCourses.length} course{deptCourses.length !== 1 ? 's' : ''} available</p>
                         </div>
                       </div>
                       <svg
-                        className={`w-5 h-5 text-gray-400 transition-transform ${isExpanded ? 'rotate-180' : ''}`}
+                        className={`w-5 h-5 text-muted-foreground transition-transform ${isExpanded ? 'rotate-180' : ''}`}
                         fill="none"
                         stroke="currentColor"
                         viewBox="0 0 24 24"
@@ -216,7 +216,7 @@ export function CourseList() {
 
                     {/* Department Courses */}
                     {isExpanded && (
-                      <div className="px-6 py-4 bg-gray-50 border-t border-gray-200">
+                      <div className="px-6 py-4 bg-muted/50 border-t border-border">
                         <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
                           {deptCourses.map((course) => (
                             <CourseCard key={course.id} course={course} />
@@ -229,8 +229,8 @@ export function CourseList() {
               })}
           </div>
         ) : (
-          <div className="text-center py-12 bg-white rounded-lg shadow-md">
-            <p className="text-gray-500 text-lg">No courses found matching your criteria.</p>
+          <div className="text-center py-12 bg-card rounded-lg shadow-md">
+            <p className="text-muted-foreground text-lg">No courses found matching your criteria.</p>
           </div>
         )}
       </div>
