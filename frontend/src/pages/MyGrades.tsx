@@ -1,9 +1,7 @@
 import { useQuery } from '@tanstack/react-query';
-import { useState } from 'react';
 import { academicAPI } from '../services/api';
 
 export function MyGrades() {
-  const [selectedSemester, setSelectedSemester] = useState<string>('all');
 
   const { data: gradesData, isLoading } = useQuery({
     queryKey: ['grades'],
@@ -35,7 +33,7 @@ export function MyGrades() {
   };
 
   const calculateTermGPA = (grades: any[]) => {
-    if (!grades.length) return 0;
+    if (!grades.length) return '0.00';
     const totalPoints = grades.reduce((sum, g) => sum + (g.gradePoints || 0), 0);
     return (totalPoints / grades.length).toFixed(2);
   };
@@ -103,7 +101,7 @@ export function MyGrades() {
                     {termGrades.length} courses
                   </p>
                 </div>
-                {termGPA > 0 && (
+                {termGPA !== '0.00' && (
                   <div className="text-right">
                     <div className="text-sm font-medium text-muted-foreground">Term GPA</div>
                     <div className="text-2xl font-bold text-foreground">{termGPA}</div>

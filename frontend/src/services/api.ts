@@ -133,6 +133,7 @@ export const academicAPI = {
   generateTranscriptPDF: () => api.get('/academic/transcript/pdf'),
   getGPA: () => api.get('/academic/gpa'),
   getGPAHistory: () => api.get('/academic/gpa/history'),
+  getAlerts: () => api.get('/students/alerts'),
 };
 
 // Applications API
@@ -183,6 +184,7 @@ export const planningAPI = {
   getAdvisor: () => api.get('/planning/advisor'),
   getCoursePlan: () => api.get('/planning/plan'),
   saveCoursePlan: (data: any) => api.post('/planning/plan', data),
+  getGraduationCheck: () => api.get('/planning/graduation-check'),
 };
 
 // Faculty Center API

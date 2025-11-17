@@ -1,14 +1,38 @@
 import { useQuery } from '@tanstack/react-query';
+import { useState } from 'react';
 import { academicAPI } from '../services/api';
 import { useAuth } from '../context/AuthContext';
+import { ChevronDown, ChevronUp, Download, Award, TrendingUp } from 'lucide-react';
 
 export function Transcript() {
   const { user } = useAuth();
+  const [expandedTerms, setExpandedTerms] = useState<Set<string>>(new Set());
 
   const { data: transcript, isLoading } = useQuery({
     queryKey: ['transcript'],
     queryFn: () => academicAPI.getTranscript().then(res => res.data.data),
   });
+
+  const toggleTerm = (termKey: string) => {
+    const newExpanded = new Set(expandedTerms);
+    if (newExpanded.has(termKey)) {
+      newExpanded.delete(termKey);
+    } else {
+      newExpanded.add(termKey);
+    }
+    setExpandedTerms(newExpanded);
+  };
+
+  const expandAll = () => {
+    if (transcript) {
+      const allTerms = transcript.map((_: any, index: number) => `term-${index}`);
+      setExpandedTerms(new Set(allTerms));
+    }
+  };
+
+  const collapseAll = () => {
+    setExpandedTerms(new Set());
+  };
 
   const handleDownloadPDF = async () => {
     try {
@@ -55,15 +79,31 @@ export function Transcript() {
           <h1 className="text-3xl font-bold text-foreground">Academic Transcript</h1>
           <p className="mt-2 text-muted-foreground">Your official academic record</p>
         </div>
-        <button
-          onClick={handleDownloadPDF}
-          className="inline-flex items-center px-4 py-2 bg-primary text-primary-foreground rounded-lg hover:bg-primary/90 transition-colors shadow-sm"
-        >
-          <svg className="mr-2 h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-          </svg>
-          Download PDF
-        </button>
+        <div className="flex items-center gap-3">
+          {transcript && transcript.length > 0 && (
+            <>
+              <button
+                onClick={expandAll}
+                className="px-4 py-2 border border-border rounded-lg hover:bg-accent transition-colors text-sm"
+              >
+                Expand All
+              </button>
+              <button
+                onClick={collapseAll}
+                className="px-4 py-2 border border-border rounded-lg hover:bg-accent transition-colors text-sm"
+              >
+                Collapse All
+              </button>
+            </>
+          )}
+          <button
+            onClick={handleDownloadPDF}
+            className="inline-flex items-center px-4 py-2 bg-primary text-primary-foreground rounded-lg hover:bg-primary/90 transition-colors shadow-sm"
+          >
+            <Download className="mr-2 h-4 w-4" />
+            Download PDF
+          </button>
+        </div>
       </div>
 
       {transcript && transcript.length > 0 ? (
@@ -118,10 +158,14 @@ export function Transcript() {
           {transcript[transcript.length - 1] && (
             <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
               <div className="bg-gradient-to-br from-blue-500 to-blue-600 rounded-lg shadow-lg p-6 text-white">
-                <div className="text-sm font-medium opacity-90">Cumulative GPA</div>
-                <div className="mt-2 text-4xl font-bold">
+                <div className="flex items-center gap-2 mb-2">
+                  <Award className="h-5 w-5" />
+                  <div className="text-sm font-medium opacity-90">Cumulative GPA</div>
+                </div>
+                <div className="text-4xl font-bold">
                   {transcript[transcript.length - 1].gpa?.toFixed(2) || '0.00'}
                 </div>
+                <div className="text-xs opacity-75 mt-1">/ 4.00</div>
               </div>
 
               <div className="bg-card border border-border rounded-lg shadow p-6 border-l-4 border-green-500">
@@ -129,6 +173,7 @@ export function Transcript() {
                 <div className="mt-2 text-3xl font-bold text-foreground">
                   {transcript[transcript.length - 1].totalCredits || 0}
                 </div>
+                <div className="text-xs text-muted-foreground mt-1">Credits Earned</div>
               </div>
 
               <div className="bg-card border border-border rounded-lg shadow p-6 border-l-4 border-purple-500">
@@ -136,11 +181,15 @@ export function Transcript() {
                 <div className="mt-2 text-3xl font-bold text-foreground">
                   {transcript[transcript.length - 1].qualityPoints?.toFixed(1) || '0.0'}
                 </div>
+                <div className="text-xs text-muted-foreground mt-1">Total QP</div>
               </div>
 
               <div className="bg-card border border-border rounded-lg shadow p-6 border-l-4 border-indigo-500">
-                <div className="text-sm font-medium text-muted-foreground">Academic Standing</div>
-                <div className="mt-2 text-xl font-bold text-foreground">
+                <div className="flex items-center gap-2 mb-2">
+                  <TrendingUp className="h-4 w-4 text-muted-foreground" />
+                  <div className="text-sm font-medium text-muted-foreground">Academic Standing</div>
+                </div>
+                <div className="text-xl font-bold text-foreground">
                   {transcript[transcript.length - 1].academicStanding || 'Good Standing'}
                 </div>
               </div>
@@ -148,116 +197,151 @@ export function Transcript() {
           )}
 
           {/* Term-by-Term Transcript */}
-          {transcript.map((term: any, index: number) => (
-            <div key={index} className="bg-card border border-border rounded-lg shadow-lg overflow-hidden">
-              <div className="bg-muted/50 px-6 py-4 border-b border-border">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <h3 className="text-xl font-semibold text-foreground">
-                      {term.semester} {term.year}
-                    </h3>
-                  </div>
-                  <div className="text-right">
-                    <div className="text-sm text-muted-foreground">Term GPA</div>
-                    <div className="text-2xl font-bold text-foreground">
-                      {term.termGPA?.toFixed(2) || '—'}
+          <div className="space-y-4">
+            <h2 className="text-xl font-semibold text-foreground">Academic History</h2>
+            {transcript.map((term: any, index: number) => {
+              const termKey = `term-${index}`;
+              const isExpanded = expandedTerms.has(termKey);
+
+              return (
+                <div key={index} className="bg-card border border-border rounded-lg shadow-lg overflow-hidden">
+                  {/* Term Header - Clickable */}
+                  <button
+                    onClick={() => toggleTerm(termKey)}
+                    className="w-full bg-muted/50 px-6 py-4 border-b border-border hover:bg-muted/70 transition-colors"
+                  >
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-4">
+                        <div className="text-left">
+                          <h3 className="text-xl font-semibold text-foreground">
+                            {term.semester} {term.year}
+                          </h3>
+                          <p className="text-sm text-muted-foreground mt-1">
+                            {term.courses?.length || 0} courses • {term.termCredits || 0} credits
+                          </p>
+                        </div>
+                      </div>
+                      <div className="flex items-center gap-6">
+                        <div className="text-right">
+                          <div className="text-sm text-muted-foreground">Term GPA</div>
+                          <div className="text-2xl font-bold text-foreground">
+                            {term.termGPA?.toFixed(2) || '—'}
+                          </div>
+                        </div>
+                        <div className="text-right">
+                          <div className="text-sm text-muted-foreground">Cumulative GPA</div>
+                          <div className="text-2xl font-bold text-primary">
+                            {term.gpa?.toFixed(2) || '—'}
+                          </div>
+                        </div>
+                        {isExpanded ? (
+                          <ChevronUp className="h-5 w-5 text-muted-foreground" />
+                        ) : (
+                          <ChevronDown className="h-5 w-5 text-muted-foreground" />
+                        )}
+                      </div>
                     </div>
-                  </div>
-                </div>
-              </div>
+                  </button>
 
-              <div className="overflow-x-auto">
-                <table className="min-w-full divide-y divide-border">
-                  <thead className="bg-muted/50">
-                    <tr>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">
-                        Course Code
-                      </th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">
-                        Course Title
-                      </th>
-                      <th className="px-6 py-3 text-center text-xs font-medium text-muted-foreground uppercase tracking-wider">
-                        Credits
-                      </th>
-                      <th className="px-6 py-3 text-center text-xs font-medium text-muted-foreground uppercase tracking-wider">
-                        Grade
-                      </th>
-                      <th className="px-6 py-3 text-center text-xs font-medium text-muted-foreground uppercase tracking-wider">
-                        Points
-                      </th>
-                    </tr>
-                  </thead>
-                  <tbody className="bg-card divide-y divide-border">
-                    {term.courses && term.courses.map((course: any, idx: number) => (
-                      <tr key={idx} className="hover:bg-muted/30 transition-colors">
-                        <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-foreground">
-                          {course.courseCode}
-                        </td>
-                        <td className="px-6 py-4 text-sm text-foreground">
-                          {course.courseName}
-                        </td>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm text-center text-foreground">
-                          {course.credits}
-                        </td>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm text-center">
-                          <span className={`font-semibold ${
-                            course.letterGrade?.startsWith('A')
-                              ? 'text-green-600 dark:text-green-400'
-                              : course.letterGrade?.startsWith('B')
-                              ? 'text-blue-600 dark:text-blue-400'
-                              : course.letterGrade?.startsWith('C')
-                              ? 'text-yellow-600 dark:text-yellow-400'
-                              : course.letterGrade === 'F'
-                              ? 'text-red-600 dark:text-red-400'
-                              : 'text-muted-foreground'
-                          }`}>
-                            {course.letterGrade || '—'}
-                          </span>
-                        </td>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm text-center text-foreground">
-                          {course.gradePoints?.toFixed(2) || '—'}
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                  <tfoot className="bg-muted/50 font-semibold">
-                    <tr>
-                      <td colSpan={2} className="px-6 py-3 text-sm text-foreground">
-                        Term Totals
-                      </td>
-                      <td className="px-6 py-3 text-sm text-center text-foreground">
-                        {term.termCredits || 0}
-                      </td>
-                      <td className="px-6 py-3 text-sm text-center text-foreground">
-                        GPA: {term.termGPA?.toFixed(2) || '—'}
-                      </td>
-                      <td className="px-6 py-3 text-sm text-center text-foreground">
-                        {term.termQualityPoints?.toFixed(1) || '—'}
-                      </td>
-                    </tr>
-                  </tfoot>
-                </table>
-              </div>
+                  {/* Term Content - Expandable */}
+                  {isExpanded && (
+                    <>
+                      <div className="overflow-x-auto">
+                        <table className="min-w-full divide-y divide-border">
+                          <thead className="bg-muted/50">
+                            <tr>
+                              <th className="px-6 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">
+                                Course Code
+                              </th>
+                              <th className="px-6 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">
+                                Course Title
+                              </th>
+                              <th className="px-6 py-3 text-center text-xs font-medium text-muted-foreground uppercase tracking-wider">
+                                Credits
+                              </th>
+                              <th className="px-6 py-3 text-center text-xs font-medium text-muted-foreground uppercase tracking-wider">
+                                Grade
+                              </th>
+                              <th className="px-6 py-3 text-center text-xs font-medium text-muted-foreground uppercase tracking-wider">
+                                Points
+                              </th>
+                            </tr>
+                          </thead>
+                          <tbody className="bg-card divide-y divide-border">
+                            {term.courses && term.courses.map((course: any, idx: number) => (
+                              <tr key={idx} className="hover:bg-muted/30 transition-colors">
+                                <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-foreground">
+                                  {course.courseCode}
+                                </td>
+                                <td className="px-6 py-4 text-sm text-foreground">
+                                  {course.courseName}
+                                </td>
+                                <td className="px-6 py-4 whitespace-nowrap text-sm text-center text-foreground">
+                                  {course.credits}
+                                </td>
+                                <td className="px-6 py-4 whitespace-nowrap text-sm text-center">
+                                  <span className={`font-semibold ${
+                                    course.letterGrade?.startsWith('A')
+                                      ? 'text-green-600 dark:text-green-400'
+                                      : course.letterGrade?.startsWith('B')
+                                      ? 'text-blue-600 dark:text-blue-400'
+                                      : course.letterGrade?.startsWith('C')
+                                      ? 'text-yellow-600 dark:text-yellow-400'
+                                      : course.letterGrade === 'F'
+                                      ? 'text-red-600 dark:text-red-400'
+                                      : 'text-muted-foreground'
+                                  }`}>
+                                    {course.letterGrade || '—'}
+                                  </span>
+                                </td>
+                                <td className="px-6 py-4 whitespace-nowrap text-sm text-center text-foreground">
+                                  {course.gradePoints?.toFixed(2) || '—'}
+                                </td>
+                              </tr>
+                            ))}
+                          </tbody>
+                          <tfoot className="bg-muted/50 font-semibold">
+                            <tr>
+                              <td colSpan={2} className="px-6 py-3 text-sm text-foreground">
+                                Term Totals
+                              </td>
+                              <td className="px-6 py-3 text-sm text-center text-foreground">
+                                {term.termCredits || 0}
+                              </td>
+                              <td className="px-6 py-3 text-sm text-center text-foreground">
+                                GPA: {term.termGPA?.toFixed(2) || '—'}
+                              </td>
+                              <td className="px-6 py-3 text-sm text-center text-foreground">
+                                {term.termQualityPoints?.toFixed(1) || '—'}
+                              </td>
+                            </tr>
+                          </tfoot>
+                        </table>
+                      </div>
 
-              {/* Cumulative Summary for this term */}
-              <div className="bg-blue-50 dark:bg-blue-950/30 px-6 py-4 border-t border-border">
-                <div className="grid grid-cols-3 gap-4 text-sm">
-                  <div>
-                    <span className="text-muted-foreground">Cumulative Credits: </span>
-                    <span className="font-semibold text-foreground">{term.totalCredits || 0}</span>
-                  </div>
-                  <div>
-                    <span className="text-muted-foreground">Cumulative GPA: </span>
-                    <span className="font-semibold text-foreground">{term.gpa?.toFixed(2) || '—'}</span>
-                  </div>
-                  <div>
-                    <span className="text-muted-foreground">Academic Standing: </span>
-                    <span className="font-semibold text-foreground">{term.academicStanding || 'Good Standing'}</span>
-                  </div>
+                      {/* Cumulative Summary for this term */}
+                      <div className="bg-blue-50 dark:bg-blue-950/30 px-6 py-4 border-t border-border">
+                        <div className="grid grid-cols-3 gap-4 text-sm">
+                          <div>
+                            <span className="text-muted-foreground">Cumulative Credits: </span>
+                            <span className="font-semibold text-foreground">{term.totalCredits || 0}</span>
+                          </div>
+                          <div>
+                            <span className="text-muted-foreground">Cumulative GPA: </span>
+                            <span className="font-semibold text-foreground">{term.gpa?.toFixed(2) || '—'}</span>
+                          </div>
+                          <div>
+                            <span className="text-muted-foreground">Academic Standing: </span>
+                            <span className="font-semibold text-foreground">{term.academicStanding || 'Good Standing'}</span>
+                          </div>
+                        </div>
+                      </div>
+                    </>
+                  )}
                 </div>
-              </div>
-            </div>
-          ))}
+              );
+            })}
+          </div>
 
           {/* Legend */}
           <div className="bg-card border border-border rounded-lg shadow p-6">

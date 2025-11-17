@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
+import { Filter, X, Calendar, BookOpen, Award } from 'lucide-react';
 import api from '../services/api';
 import { CourseCard } from '../components/CourseCard';
 
@@ -13,6 +14,7 @@ interface Course {
   currentEnrollment: number;
   description: string | null;
   prerequisites: string | null;
+  category?: 'CORE' | 'MAJOR_REQUIRED' | 'MAJOR_ELECTIVE' | 'FREE_ELECTIVE';
   instructor: {
     fullName: string;
   } | null;
@@ -22,12 +24,34 @@ interface Course {
     endTime: string;
     location: string;
   }>;
+  recommendation?: {
+    reason: string;
+    priority: 'HIGH' | 'MEDIUM' | 'LOW';
+  };
+}
+
+interface CourseFilter {
+  searchText: string;
+  department: string;
+  category: string[];
+  credits: number[];
+  dayOfWeek: string[];
+  showRecommendedOnly: boolean;
 }
 
 export function CourseList() {
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedDepartment, setSelectedDepartment] = useState('');
   const [expandedDepartments, setExpandedDepartments] = useState<Set<string>>(new Set());
+  const [showFilters, setShowFilters] = useState(false);
+  const [filters, setFilters] = useState<CourseFilter>({
+    searchText: '',
+    department: '',
+    category: [],
+    credits: [],
+    dayOfWeek: [],
+    showRecommendedOnly: false,
+  });
 
   const { data: courses, isLoading } = useQuery<Course[]>({
     queryKey: ['courses'],
@@ -44,6 +68,7 @@ export function CourseList() {
         currentEnrollment: course.current_enrollment,
         description: course.description,
         prerequisites: course.prerequisites,
+        category: course.category,
         instructor: course.users ? {
           fullName: course.users.full_name
         } : null,
@@ -52,7 +77,11 @@ export function CourseList() {
           startTime: slot.start_time,
           endTime: slot.end_time,
           location: slot.location || ''
-        }))
+        })),
+        recommendation: course.recommendation ? {
+          reason: course.recommendation.reason,
+          priority: course.recommendation.priority
+        } : undefined
       }));
     },
   });
@@ -66,16 +95,38 @@ export function CourseList() {
   });
 
   const filteredCourses = courses?.filter((course) => {
+    // Text search
     const matchesSearch =
       searchQuery === '' ||
       course.courseCode.toLowerCase().includes(searchQuery.toLowerCase()) ||
       course.courseName.toLowerCase().includes(searchQuery.toLowerCase()) ||
       (course.instructor?.fullName?.toLowerCase().includes(searchQuery.toLowerCase()) ?? false);
 
+    // Department filter
     const matchesDepartment =
       selectedDepartment === '' || course.department === selectedDepartment;
 
-    return matchesSearch && matchesDepartment;
+    // Category filter
+    const matchesCategory =
+      filters.category.length === 0 ||
+      (course.category && filters.category.includes(course.category));
+
+    // Credits filter
+    const matchesCredits =
+      filters.credits.length === 0 ||
+      filters.credits.includes(course.credits);
+
+    // Day of week filter
+    const matchesDayOfWeek =
+      filters.dayOfWeek.length === 0 ||
+      course.timeSlots.some((slot) => filters.dayOfWeek.includes(slot.dayOfWeek));
+
+    // Recommended only filter
+    const matchesRecommended =
+      !filters.showRecommendedOnly || course.recommendation !== undefined;
+
+    return matchesSearch && matchesDepartment && matchesCategory &&
+           matchesCredits && matchesDayOfWeek && matchesRecommended;
   });
 
   // Group courses by department
@@ -107,6 +158,32 @@ export function CourseList() {
   const collapseAll = () => {
     setExpandedDepartments(new Set());
   };
+
+  const toggleFilter = (filterType: keyof Pick<CourseFilter, 'category' | 'credits' | 'dayOfWeek'>, value: any) => {
+    setFilters((prev) => {
+      const currentValues = prev[filterType] as any[];
+      const newValues = currentValues.includes(value)
+        ? currentValues.filter((v) => v !== value)
+        : [...currentValues, value];
+      return { ...prev, [filterType]: newValues };
+    });
+  };
+
+  const clearAllFilters = () => {
+    setFilters({
+      searchText: '',
+      department: '',
+      category: [],
+      credits: [],
+      dayOfWeek: [],
+      showRecommendedOnly: false,
+    });
+    setSearchQuery('');
+    setSelectedDepartment('');
+  };
+
+  const activeFilterCount = filters.category.length + filters.credits.length + filters.dayOfWeek.length +
+                           (filters.showRecommendedOnly ? 1 : 0);
 
   if (isLoading) {
     return (
@@ -159,6 +236,126 @@ export function CourseList() {
               </select>
             </div>
           </div>
+
+          {/* Advanced Filters Toggle */}
+          <div className="mt-4 flex items-center justify-between">
+            <button
+              onClick={() => setShowFilters(!showFilters)}
+              className="inline-flex items-center gap-2 px-3 py-1.5 text-sm font-medium text-primary hover:bg-primary/10 rounded-lg transition-colors"
+            >
+              <Filter className="h-4 w-4" />
+              Advanced Filters
+              {activeFilterCount > 0 && (
+                <span className="bg-primary text-primary-foreground px-2 py-0.5 rounded-full text-xs">
+                  {activeFilterCount}
+                </span>
+              )}
+            </button>
+            {activeFilterCount > 0 && (
+              <button
+                onClick={clearAllFilters}
+                className="inline-flex items-center gap-1 px-3 py-1.5 text-sm text-muted-foreground hover:text-foreground transition-colors"
+              >
+                <X className="h-4 w-4" />
+                Clear all filters
+              </button>
+            )}
+          </div>
+
+          {/* Advanced Filters Panel */}
+          {showFilters && (
+            <div className="mt-4 p-4 bg-muted/50 rounded-lg border border-border space-y-4">
+              {/* Category Filter */}
+              <div>
+                <label className="block text-sm font-medium text-foreground mb-2 flex items-center gap-2">
+                  <BookOpen className="h-4 w-4" />
+                  Course Category
+                </label>
+                <div className="flex flex-wrap gap-2">
+                  {[
+                    { value: 'CORE', label: 'Core' },
+                    { value: 'MAJOR_REQUIRED', label: 'Major Required' },
+                    { value: 'MAJOR_ELECTIVE', label: 'Major Elective' },
+                    { value: 'FREE_ELECTIVE', label: 'Free Elective' },
+                  ].map((cat) => (
+                    <button
+                      key={cat.value}
+                      onClick={() => toggleFilter('category', cat.value)}
+                      className={`px-3 py-1.5 rounded-full text-sm font-medium transition-colors ${
+                        filters.category.includes(cat.value)
+                          ? 'bg-primary text-primary-foreground'
+                          : 'bg-card border border-border text-foreground hover:bg-muted'
+                      }`}
+                    >
+                      {cat.label}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              {/* Credits Filter */}
+              <div>
+                <label className="block text-sm font-medium text-foreground mb-2">
+                  Credit Hours
+                </label>
+                <div className="flex flex-wrap gap-2">
+                  {[1, 2, 3, 4, 5].map((credit) => (
+                    <button
+                      key={credit}
+                      onClick={() => toggleFilter('credits', credit)}
+                      className={`px-3 py-1.5 rounded-full text-sm font-medium transition-colors ${
+                        filters.credits.includes(credit)
+                          ? 'bg-primary text-primary-foreground'
+                          : 'bg-card border border-border text-foreground hover:bg-muted'
+                      }`}
+                    >
+                      {credit} {credit === 1 ? 'Credit' : 'Credits'}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              {/* Day of Week Filter */}
+              <div>
+                <label className="block text-sm font-medium text-foreground mb-2 flex items-center gap-2">
+                  <Calendar className="h-4 w-4" />
+                  Days of Week
+                </label>
+                <div className="flex flex-wrap gap-2">
+                  {['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday'].map((day) => (
+                    <button
+                      key={day}
+                      onClick={() => toggleFilter('dayOfWeek', day)}
+                      className={`px-3 py-1.5 rounded-full text-sm font-medium transition-colors ${
+                        filters.dayOfWeek.includes(day)
+                          ? 'bg-primary text-primary-foreground'
+                          : 'bg-card border border-border text-foreground hover:bg-muted'
+                      }`}
+                    >
+                      {day.substring(0, 3)}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              {/* Recommended Only Toggle */}
+              <div>
+                <label className="flex items-center gap-2 cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={filters.showRecommendedOnly}
+                    onChange={(e) => setFilters({ ...filters, showRecommendedOnly: e.target.checked })}
+                    className="w-4 h-4 text-primary border-border rounded focus:ring-primary"
+                  />
+                  <span className="text-sm font-medium text-foreground flex items-center gap-1">
+                    <Award className="h-4 w-4 text-yellow-600 dark:text-yellow-400" />
+                    Show only recommended courses
+                  </span>
+                </label>
+              </div>
+            </div>
+          )}
+
           <div className="mt-4 flex items-center justify-between">
             <div className="text-sm text-muted-foreground">
               Showing {filteredCourses?.length || 0} courses across {Object.keys(coursesByDepartment || {}).length} departments

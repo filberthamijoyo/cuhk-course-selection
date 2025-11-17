@@ -18,8 +18,10 @@ import {
   ShoppingCart,
   Users,
   GraduationCap,
-  Settings,
   PieChart,
+  CheckCircle2,
+  ClipboardCheck,
+  TrendingUp,
 } from 'lucide-react';
 
 interface SidebarProps {
@@ -37,11 +39,18 @@ export function Sidebar({ isOpen, onClose }: SidebarProps) {
 
   const studentNavItems = [
     { path: '/', label: 'Dashboard', icon: LayoutDashboard },
+    { separator: true, label: 'Enrollment' },
     { path: '/enrollments', label: 'My Enrollments', icon: FileText },
     { path: '/cart', label: 'Shopping Cart', icon: ShoppingCart },
+    { separator: true, label: 'Academic Records' },
     { path: '/academic/grades', label: 'My Grades', icon: BarChart3 },
     { path: '/academic/transcript', label: 'Transcript', icon: FileText },
+    { path: '/academic/analytics', label: 'Grade Analytics', icon: TrendingUp },
+    { separator: true, label: 'Planning' },
     { path: '/planning', label: 'Degree Planning', icon: Target },
+    { path: '/planning/degree-audit', label: 'Degree Audit', icon: ClipboardCheck },
+    { path: '/planning/graduation-check', label: 'Graduation Check', icon: CheckCircle2 },
+    { separator: true, label: 'Personal' },
     { path: '/personal', label: 'Personal Info', icon: UserCircle },
     { separator: true, label: 'Services' },
     { path: '/academic-calendar', label: 'Academic Calendar', icon: Calendar },
@@ -114,6 +123,8 @@ export function Sidebar({ isOpen, onClose }: SidebarProps) {
                   </div>
                 );
               }
+
+              if (!('path' in item) || !item.path) return null;
 
               const Icon = item.icon;
               const active = isActive(item.path);

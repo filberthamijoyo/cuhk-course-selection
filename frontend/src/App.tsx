@@ -4,7 +4,6 @@ import { AuthProvider, useAuth } from './context/AuthContext';
 import { ThemeProvider } from './contexts/ThemeContext';
 import { MainLayout } from './components/layout/MainLayout';
 import { Login } from './pages/Login';
-import { Dashboard } from './pages/Dashboard';
 import { CourseDetails } from './pages/CourseDetails';
 import { MyEnrollments } from './pages/MyEnrollments';
 
@@ -16,6 +15,9 @@ import { DegreePlanning } from './pages/DegreePlanning';
 import { Applications } from './pages/Applications';
 import { CampusInfo } from './pages/CampusInfo';
 import { Transcript } from './pages/Transcript';
+import { DegreeAudit } from './pages/DegreeAudit';
+import { GraduationCheck } from './pages/GraduationCheck';
+import { GradeAnalytics } from './pages/GradeAnalytics';
 
 // Faculty Pages
 import { FacultyDashboard } from './pages/FacultyDashboard';
@@ -147,6 +149,38 @@ function App() {
                 <ProtectedRoute>
                   <MainLayout>
                     <Transcript />
+                  </MainLayout>
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/academic/analytics"
+              element={
+                <ProtectedRoute>
+                  <MainLayout>
+                    <GradeAnalytics />
+                  </MainLayout>
+                </ProtectedRoute>
+              }
+            />
+
+            {/* Degree Planning Pages */}
+            <Route
+              path="/planning/degree-audit"
+              element={
+                <ProtectedRoute>
+                  <MainLayout>
+                    <DegreeAudit />
+                  </MainLayout>
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/planning/graduation-check"
+              element={
+                <ProtectedRoute>
+                  <MainLayout>
+                    <GraduationCheck />
                   </MainLayout>
                 </ProtectedRoute>
               }
