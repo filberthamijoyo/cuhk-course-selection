@@ -2,6 +2,7 @@ import { Response } from 'express';
 import { AuthRequest } from '../middleware/auth';
 import prisma from '../config/prisma';
 import { AppError } from '../utils/errors';
+import PDFDocument from 'pdfkit';
 
 /**
  * Get all grades for the authenticated user
@@ -365,7 +366,6 @@ export async function getUnofficialTranscript(req: AuthRequest, res: Response) {
 export async function generateTranscriptPDF(req: AuthRequest, res: Response) {
   try {
     const userId = req.user!.id;
-    const PDFDocument = require('pdfkit');
 
     const user = await prisma.users.findUnique({
       where: { id: userId },
@@ -447,10 +447,12 @@ export async function generateTranscriptPDF(req: AuthRequest, res: Response) {
     doc.text(`Name: ${user.full_name}`);
     doc.text(`Student ID: ${user.user_identifier}`);
     doc.text(`Email: ${user.email}`);
-    if (student.majors) {
+    if (student.major_id && student.majors) {
       doc.text(`Major: ${student.majors.major_name}`);
     }
-    doc.text(`Year Level: ${student.year_level || 'N/A'}`);
+    if (student.year_level) {
+      doc.text(`Year Level: ${student.year_level}`);
+    }
     doc.moveDown();
 
     // Academic Summary
@@ -474,6 +476,11 @@ export async function generateTranscriptPDF(req: AuthRequest, res: Response) {
     // Course History
     doc.fontSize(12).text('COURSE HISTORY', { underline: true });
     doc.moveDown(0.5);
+
+    if (Object.keys(coursesByTerm).length === 0) {
+      doc.fontSize(10).text('No grades available yet.', { align: 'center' });
+      doc.moveDown();
+    }
 
     Object.entries(coursesByTerm).forEach(([term, courses]) => {
       doc.fontSize(11).text(term, { underline: true });
@@ -504,6 +511,10 @@ export async function generateTranscriptPDF(req: AuthRequest, res: Response) {
       let termPoints = 0;
 
       courses.forEach((enrollment) => {
+        if (!enrollment.grades || enrollment.grades.length === 0) {
+          return; // Skip if no grades
+        }
+
         const course = enrollment.courses;
         const grade = enrollment.grades[0];
         const currentY = doc.y;
