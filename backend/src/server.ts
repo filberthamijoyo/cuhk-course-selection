@@ -16,7 +16,6 @@ import adminRoutes from './routes/adminRoutes';
 import instructorRoutes from './routes/instructorRoutes';
 // New SIS routes
 import academicRoutes from './routes/academicRoutes';
-import financialRoutes from './routes/financialRoutes';
 import applicationRoutes from './routes/applicationRoutes';
 import personalRoutes from './routes/personalRoutes';
 import planningRoutes from './routes/planningRoutes';
@@ -141,7 +140,6 @@ app.get('/', (_req: Request, res: Response) => {
       admin: '/api/admin',
       instructor: '/api/instructor',
       academic: '/api/academic',
-      financial: '/api/financial',
       applications: '/api/applications',
       personal: '/api/personal',
       planning: '/api/planning',
@@ -164,7 +162,6 @@ app.use('/api/instructor', instructorRoutes);
 
 // New SIS API Routes
 app.use('/api/academic', academicRoutes);
-app.use('/api/financial', financialRoutes);
 app.use('/api/applications', applicationRoutes);
 app.use('/api/personal', personalRoutes);
 app.use('/api/planning', planningRoutes);

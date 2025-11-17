@@ -32,7 +32,6 @@ model User {
   taughtCourses                                                        Course[]                   @relation("InstructorCourses")
   enrollments                                                          Enrollment[]
   faculty                                                              Faculty?
-  financialAccount                                                     FinancialAccount?
   gradesApproved                                                       Grade[]                    @relation("GradesApproved")
   gradesSubmitted                                                      Grade[]                    @relation("GradesSubmitted")
   major_change_requests                                                major_change_requests[]
@@ -198,53 +197,6 @@ model Student {
   @@index([userId])
   @@index([studentId])
   @@map("students")
-}
-
-model FinancialAccount {
-  id          Int       @id @default(autoincrement())
-  userId      Int       @unique @map("user_id")
-  balance     Float     @default(0)
-  tuitionDue  Float     @default(0) @map("tuition_due")
-  housingDue  Float     @default(0) @map("housing_due")
-  otherDue    Float     @default(0) @map("other_due")
-  lastUpdated DateTime  @updatedAt @map("last_updated")
-  charges     Charge[]
-  user        User      @relation(fields: [userId], references: [id])
-  payments    Payment[]
-
-  @@map("financial_accounts")
-}
-
-model Charge {
-  id          Int              @id @default(autoincrement())
-  accountId   Int              @map("account_id")
-  semester    Semester?
-  year        Int?
-  type        ChargeType
-  description String
-  amount      Float
-  dueDate     DateTime         @map("due_date")
-  isPaid      Boolean          @default(false) @map("is_paid")
-  createdAt   DateTime         @default(now()) @map("created_at")
-  account     FinancialAccount @relation(fields: [accountId], references: [id])
-
-  @@index([accountId])
-  @@map("charges")
-}
-
-model Payment {
-  id              Int              @id @default(autoincrement())
-  accountId       Int              @map("account_id")
-  amount          Float
-  method          PaymentMethod
-  referenceNumber String           @map("reference_number")
-  status          PaymentStatus    @default(PENDING)
-  processedAt     DateTime?        @map("processed_at")
-  createdAt       DateTime         @default(now()) @map("created_at")
-  account         FinancialAccount @relation(fields: [accountId], references: [id])
-
-  @@index([accountId])
-  @@map("payments")
 }
 
 model Application {
@@ -552,33 +504,6 @@ enum StudentStatus {
   WITHDRAWN
   SUSPENDED
   GRADUATED
-}
-
-enum ChargeType {
-  TUITION
-  HOUSING
-  MEAL_PLAN
-  ACTIVITY_FEE
-  TECHNOLOGY_FEE
-  LIBRARY_FEE
-  OTHER
-}
-
-enum PaymentMethod {
-  BANK_TRANSFER
-  CREDIT_CARD
-  WECHAT_PAY
-  ALIPAY
-  CASH
-  CHECK
-}
-
-enum PaymentStatus {
-  PENDING
-  PROCESSING
-  COMPLETED
-  FAILED
-  REFUNDED
 }
 
 enum ApplicationType {

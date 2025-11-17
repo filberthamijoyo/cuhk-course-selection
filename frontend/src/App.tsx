@@ -11,7 +11,6 @@ import { MyEnrollments } from './pages/MyEnrollments';
 // New Student Pages
 import { StudentDashboard } from './pages/StudentDashboard';
 import { MyGrades } from './pages/MyGrades';
-import { FinancialInfo } from './pages/FinancialInfo';
 import { PersonalInfo } from './pages/PersonalInfo';
 import { DegreePlanning } from './pages/DegreePlanning';
 import { Applications } from './pages/Applications';
@@ -145,19 +144,7 @@ function App() {
               }
             />
 
-            {/* Financial */}
-            <Route
-              path="/financial"
-              element={
-                <ProtectedRoute>
-                  <MainLayout>
-                    <FinancialInfo />
-                  </MainLayout>
-                </ProtectedRoute>
-              }
-            />
-
-            {/* Personal Info */}
+            {/* Personal Info */}}
             <Route
               path="/personal"
               element={

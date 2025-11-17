@@ -1,6 +1,6 @@
 import { useQuery } from '@tanstack/react-query';
 import { useAuth } from '../context/AuthContext';
-import { academicAPI, financialAPI, planningAPI, campusAPI } from '../services/api';
+import { academicAPI, planningAPI, campusAPI } from '../services/api';
 import { academicCalendarService } from '../services/academicCalendarService';
 import { courseEvaluationService } from '../services/courseEvaluationService';
 import { Link } from 'react-router-dom';
@@ -10,7 +10,6 @@ import { Button } from '../components/ui/Button';
 import {
   BookOpen,
   BarChart3,
-  CreditCard,
   UserCircle,
   Target,
   Info,
@@ -33,11 +32,6 @@ export function StudentDashboard() {
   const { data: gpaData } = useQuery({
     queryKey: ['gpa'],
     queryFn: () => academicAPI.getGPA().then(res => res.data.data),
-  });
-
-  const { data: financialAccount } = useQuery({
-    queryKey: ['financial-account'],
-    queryFn: () => financialAPI.getAccount().then(res => res.data.data),
   });
 
   const { data: progress } = useQuery({
@@ -98,16 +92,6 @@ export function StudentDashboard() {
       iconBg: 'bg-gradient-to-br from-purple-500/20 to-pink-500/10',
       progress: progress?.percentageComplete || 0,
     },
-    {
-      label: 'Account Balance',
-      value: financialAccount ? `¥${Math.abs(financialAccount.balance).toLocaleString()}` : '—',
-      subtitle: financialAccount && financialAccount.balance < 0 ? 'Payment Due' : 'Current Balance',
-      icon: CreditCard,
-      gradient: financialAccount && financialAccount.balance < 0 ? 'from-red-500 to-orange-500' : 'from-amber-500 to-yellow-500',
-      bgGradient: financialAccount && financialAccount.balance < 0 ? 'from-red-500/10 to-orange-500/5' : 'from-amber-500/10 to-yellow-500/5',
-      iconBg: financialAccount && financialAccount.balance < 0 ? 'bg-gradient-to-br from-red-500/20 to-orange-500/10' : 'bg-gradient-to-br from-amber-500/20 to-yellow-500/10',
-      isNegative: financialAccount && financialAccount.balance < 0,
-    },
   ];
 
   const modules = [
@@ -153,16 +137,6 @@ export function StudentDashboard() {
       gradient: 'from-pink-600 to-rose-600',
       bgPattern: 'bg-pink-50 dark:bg-pink-950/30',
       stat: progress && `${progress.percentageComplete.toFixed(0)}% Complete`,
-    },
-    {
-      title: 'Financial Info',
-      description: 'Manage payments and view charges',
-      icon: CreditCard,
-      link: '/financial',
-      gradient: 'from-amber-600 to-orange-600',
-      bgPattern: 'bg-amber-50 dark:bg-amber-950/30',
-      stat: financialAccount && `¥${financialAccount.balance.toLocaleString()}`,
-      alert: financialAccount && financialAccount.balance < 0,
     },
   ];
 

@@ -1,4 +1,4 @@
-import { PrismaClient, Role, Semester, GradeStatus, StudentStatus, DegreeType, ChargeType, ApplicationType, ApplicationStatus, AnnouncementType, Priority, EventCategory, AttendanceStatus } from '@prisma/client';
+import { PrismaClient, Role, Semester, GradeStatus, StudentStatus, DegreeType, ApplicationType, ApplicationStatus, AnnouncementType, Priority, EventCategory, AttendanceStatus } from '@prisma/client';
 import * as bcrypt from 'bcrypt';
 
 const prisma = new PrismaClient();
@@ -850,53 +850,7 @@ async function main() {
   console.log('✅ Created transcripts');
 
   // ============================================================================
-  // 9. CREATE FINANCIAL ACCOUNTS & CHARGES
-  // ============================================================================
-  console.log('💰 Creating financial accounts...');
-
-  for (let i = 0; i < studentUsers.length; i++) {
-    const account = await prisma.financialAccount.create({
-      data: {
-        userId: studentUsers[i].id,
-        balance: -30000,
-        tuitionDue: 25000,
-        housingDue: 5000,
-      },
-    });
-
-    // Create tuition charge
-    await prisma.charge.create({
-      data: {
-        accountId: account.id,
-        semester: Semester.FALL,
-        year: 2024,
-        type: ChargeType.TUITION,
-        description: 'Fall 2024 Tuition',
-        amount: 25000,
-        dueDate: new Date('2024-08-31'),
-        isPaid: false,
-      },
-    });
-
-    // Create housing charge
-    await prisma.charge.create({
-      data: {
-        accountId: account.id,
-        semester: Semester.FALL,
-        year: 2024,
-        type: ChargeType.HOUSING,
-        description: 'Fall 2024 Housing',
-        amount: 5000,
-        dueDate: new Date('2024-08-31'),
-        isPaid: false,
-      },
-    });
-  }
-
-  console.log('✅ Created financial accounts with charges');
-
-  // ============================================================================
-  // 10. CREATE APPLICATIONS
+  // 9. CREATE APPLICATIONS
   // ============================================================================
   console.log('📋 Creating sample applications...');
 

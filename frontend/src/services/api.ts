@@ -106,21 +106,6 @@ export const academicAPI = {
   getGPAHistory: () => api.get('/academic/gpa/history'),
 };
 
-// Financial API
-export const financialAPI = {
-  getAccount: () => api.get('/financial/account'),
-  getCharges: () => api.get('/financial/charges'),
-  getUnpaidCharges: () => api.get('/financial/charges/unpaid'),
-  getPayments: () => api.get('/financial/payments'),
-  makePayment: (data: {
-    amount: number;
-    method: string;
-    referenceNumber: string;
-  }) => api.post('/financial/payments', data),
-  getStatement: (semester: string, year: number) =>
-    api.get(`/financial/statement/${semester}/${year}`),
-};
-
 // Applications API
 export const applicationAPI = {
   getMyApplications: () => api.get('/applications'),
