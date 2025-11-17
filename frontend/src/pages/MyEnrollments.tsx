@@ -15,7 +15,7 @@ interface Enrollment {
     department: string;
     instructor: {
       fullName: string;
-    };
+    } | null;
     timeSlots: Array<{
       dayOfWeek: string;
       startTime: string;
@@ -36,7 +36,28 @@ export function MyEnrollments() {
     queryKey: ['my-enrollments'],
     queryFn: async () => {
       const response = await api.get('/enrollments/my-courses');
-      return response.data.data;
+      // Transform backend data (snake_case) to frontend format (camelCase)
+      return response.data.data.map((enrollment: any) => ({
+        id: enrollment.id,
+        status: enrollment.status,
+        enrolledAt: enrollment.enrolled_at,
+        course: {
+          id: enrollment.courses.id,
+          courseCode: enrollment.courses.course_code,
+          courseName: enrollment.courses.course_name,
+          credits: enrollment.courses.credits,
+          department: enrollment.courses.department,
+          instructor: enrollment.courses.users ? {
+            fullName: enrollment.courses.users.full_name
+          } : null,
+          timeSlots: (enrollment.courses.time_slots || []).map((slot: any) => ({
+            dayOfWeek: slot.day_of_week,
+            startTime: slot.start_time,
+            endTime: slot.end_time,
+            location: slot.location || ''
+          }))
+        }
+      }));
     },
   });
 
@@ -243,7 +264,7 @@ export function MyEnrollments() {
                       <div className="text-sm text-gray-600 space-y-1">
                         <p>
                           <span className="font-medium">Instructor:</span>{' '}
-                          {enrollment.course.instructor.fullName}
+                          {enrollment.course.instructor?.fullName || 'TBA'}
                         </p>
                         <p>
                           <span className="font-medium">Department:</span>{' '}

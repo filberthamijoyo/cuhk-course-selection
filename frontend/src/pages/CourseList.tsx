@@ -15,7 +15,7 @@ interface Course {
   prerequisites: string | null;
   instructor: {
     fullName: string;
-  };
+  } | null;
   timeSlots: Array<{
     dayOfWeek: string;
     startTime: string;
@@ -32,7 +32,27 @@ export function CourseList() {
     queryKey: ['courses'],
     queryFn: async () => {
       const response = await api.get('/courses');
-      return response.data.data;
+      // Transform backend data (snake_case) to frontend format (camelCase)
+      return response.data.data.map((course: any) => ({
+        id: course.id,
+        courseCode: course.course_code,
+        courseName: course.course_name,
+        credits: course.credits,
+        department: course.department,
+        maxCapacity: course.max_capacity,
+        currentEnrollment: course.current_enrollment,
+        description: course.description,
+        prerequisites: course.prerequisites,
+        instructor: course.users ? {
+          fullName: course.users.full_name
+        } : null,
+        timeSlots: (course.time_slots || []).map((slot: any) => ({
+          dayOfWeek: slot.day_of_week,
+          startTime: slot.start_time,
+          endTime: slot.end_time,
+          location: slot.location || ''
+        }))
+      }));
     },
   });
 
@@ -49,7 +69,7 @@ export function CourseList() {
       searchQuery === '' ||
       course.courseCode.toLowerCase().includes(searchQuery.toLowerCase()) ||
       course.courseName.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      course.instructor.fullName.toLowerCase().includes(searchQuery.toLowerCase());
+      (course.instructor?.fullName?.toLowerCase().includes(searchQuery.toLowerCase()) ?? false);
 
     const matchesDepartment =
       selectedDepartment === '' || course.department === selectedDepartment;

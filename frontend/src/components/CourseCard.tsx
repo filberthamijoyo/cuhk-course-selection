@@ -16,7 +16,7 @@ interface CourseCardProps {
     prerequisites: string | null;
     instructor: {
       fullName: string;
-    };
+    } | null;
     timeSlots: Array<{
       dayOfWeek: string;
       startTime: string;
@@ -124,7 +124,7 @@ export function CourseCard({ course }: CourseCardProps) {
       <div className="space-y-2 mb-4 text-sm">
         <div className="flex items-center text-gray-600">
           <span className="font-medium w-24">Instructor:</span>
-          <span>{course.instructor.fullName}</span>
+          <span>{course.instructor?.fullName || 'TBA'}</span>
         </div>
         <div className="flex items-center text-gray-600">
           <span className="font-medium w-24">Department:</span>
