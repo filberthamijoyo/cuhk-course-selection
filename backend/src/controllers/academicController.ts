@@ -255,7 +255,7 @@ export async function getTranscript(req: AuthRequest, res: Response) {
           cumulativeGPA: latestTranscript?.gpa || 0,
           totalCredits,
           earnedCredits: totalCredits,
-          academicStanding: latestTranscript?.academicStanding || 'N/A',
+          academicStanding: latestTranscript?.academic_standing || 'N/A',
         },
       },
     });
@@ -389,18 +389,14 @@ export async function generateTranscriptPDF(req: AuthRequest, res: Response) {
       where: {
         user_id: userId,
         grades: {
-          some: {
+          is: {
             status: 'PUBLISHED',
           },
         },
       },
       include: {
         courses: true,
-        grades: {
-          where: {
-            status: 'PUBLISHED',
-          },
-        },
+        grades: true,
       },
       orderBy: [
         { courses: { year: 'asc' } },
@@ -413,10 +409,9 @@ export async function generateTranscriptPDF(req: AuthRequest, res: Response) {
     let totalQualityPoints = 0;
 
     enrollments.forEach((enrollment) => {
-      if (enrollment.grades && enrollment.grades.length > 0) {
-        const grade = enrollment.grades[0];
+      if (enrollment.grades && enrollment.grades.grade_points !== null && enrollment.grades.grade_points !== undefined) {
         totalCredits += enrollment.courses.credits;
-        totalQualityPoints += grade.grade_points * enrollment.courses.credits;
+        totalQualityPoints += enrollment.grades.grade_points * enrollment.courses.credits;
       }
     });
 
@@ -448,10 +443,10 @@ export async function generateTranscriptPDF(req: AuthRequest, res: Response) {
     doc.text(`Student ID: ${user.user_identifier}`);
     doc.text(`Email: ${user.email}`);
     if (student.major_id && student.majors) {
-      doc.text(`Major: ${student.majors.major_name}`);
+      doc.text(`Major: ${student.majors.name}`);
     }
-    if (student.year_level) {
-      doc.text(`Year Level: ${student.year_level}`);
+    if (student.year) {
+      doc.text(`Year Level: ${student.year}`);
     }
     doc.moveDown();
 
@@ -511,22 +506,22 @@ export async function generateTranscriptPDF(req: AuthRequest, res: Response) {
       let termPoints = 0;
 
       courses.forEach((enrollment) => {
-        if (!enrollment.grades || enrollment.grades.length === 0) {
-          return; // Skip if no grades
+        if (!enrollment.grades || !enrollment.courses) {
+          return; // Skip if no grade or course
         }
 
         const course = enrollment.courses;
-        const grade = enrollment.grades[0];
+        const grade = enrollment.grades;
         const currentY = doc.y;
 
-        doc.text(course.course_code, col1, currentY);
-        doc.text(course.course_name.substring(0, 30), col2, currentY);
-        doc.text(course.credits.toString(), col3, currentY);
-        doc.text(grade.letter_grade, col4, currentY);
-        doc.text(grade.grade_points.toFixed(2), col5, currentY);
+        doc.text(course.course_code || 'N/A', col1, currentY);
+        doc.text((course.course_name || 'N/A').substring(0, 30), col2, currentY);
+        doc.text((course.credits || 0).toString(), col3, currentY);
+        doc.text(grade.letter_grade || 'N/A', col4, currentY);
+        doc.text((grade.grade_points ?? 0).toFixed(2), col5, currentY);
 
-        termCredits += course.credits;
-        termPoints += grade.grade_points * course.credits;
+        termCredits += course.credits || 0;
+        termPoints += (grade.grade_points ?? 0) * (course.credits || 0);
 
         doc.moveDown(0.8);
       });
