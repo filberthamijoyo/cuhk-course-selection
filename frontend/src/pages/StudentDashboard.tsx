@@ -1,42 +1,27 @@
 import { useQuery } from '@tanstack/react-query';
 import { useAuth } from '../context/AuthContext';
-import { academicAPI, planningAPI, campusAPI } from '../services/api';
-import { academicCalendarService } from '../services/academicCalendarService';
-import { courseEvaluationService } from '../services/courseEvaluationService';
+import { academicAPI, campusAPI, enrollmentAPI } from '../services/api';
 import { Link } from 'react-router-dom';
-import { Card, CardContent } from '../components/ui/Card';
-import { Badge } from '../components/ui/Badge';
-import { Button } from '../components/ui/Button';
 import {
   BookOpen,
   BarChart3,
   UserCircle,
   Target,
-  Info,
   Calendar,
-  Edit3,
-  RotateCcw,
-  Star,
+  Bell,
   ChevronRight,
-  TrendingUp,
-  CheckCircle,
   Clock,
-  Award,
-  Sparkles,
-  Zap,
+  MapPin,
+  FileText,
 } from 'lucide-react';
-import { cn } from '../lib/utils';
 
 export function StudentDashboard() {
   const { user } = useAuth();
-  const { data: gpaData } = useQuery({
-    queryKey: ['gpa'],
-    queryFn: () => academicAPI.getGPA().then(res => res.data.data),
-  });
 
-  const { data: progress } = useQuery({
-    queryKey: ['degree-progress'],
-    queryFn: () => planningAPI.getProgress().then(res => res.data.data),
+  // Get current enrollments for weekly schedule
+  const { data: enrollments } = useQuery({
+    queryKey: ['my-enrollments'],
+    queryFn: () => enrollmentAPI.getMyEnrollments().then(res => res.data.data),
   });
 
   const { data: announcements } = useQuery({
@@ -44,308 +29,252 @@ export function StudentDashboard() {
     queryFn: () => campusAPI.getAnnouncements().then(res => res.data.data),
   });
 
-  const { data: upcomingEvents } = useQuery({
-    queryKey: ['upcoming-events'],
-    queryFn: () => academicCalendarService.getUpcomingEvents(),
-    enabled: !!user,
-  });
+  // Build weekly schedule from enrollments
+  const buildWeeklySchedule = () => {
+    if (!enrollments) return {};
 
-  const { data: pendingEvaluations } = useQuery({
-    queryKey: ['pending-evaluations', user?.id],
-    queryFn: () => courseEvaluationService.getPendingEvaluations(user!.id),
-    enabled: !!user,
-  });
+    const schedule: Record<string, any[]> = {
+      'Monday': [],
+      'Tuesday': [],
+      'Wednesday': [],
+      'Thursday': [],
+      'Friday': [],
+    };
 
-  const { data: addDropStatus } = useQuery({
-    queryKey: ['add-drop-status'],
-    queryFn: () => academicCalendarService.getAddDropStatus(),
-  });
+    enrollments.forEach((enrollment: any) => {
+      if (enrollment.courses?.time_slots) {
+        enrollment.courses.time_slots.forEach((slot: any) => {
+          const day = slot.day_of_week;
+          if (schedule[day]) {
+            schedule[day].push({
+              courseCode: enrollment.courses.course_code,
+              courseName: enrollment.courses.course_name,
+              startTime: slot.start_time,
+              endTime: slot.end_time,
+              location: slot.location,
+              instructor: enrollment.courses.users?.full_name,
+            });
+          }
+        });
+      }
+    });
 
-  const quickStats = [
-    {
-      label: 'Cumulative GPA',
-      value: gpaData ? gpaData.cumulativeGPA.toFixed(2) : '—',
-      subtitle: gpaData?.academicStanding || 'Loading...',
-      icon: TrendingUp,
-      gradient: 'from-blue-500 to-cyan-500',
-      bgGradient: 'from-blue-500/10 to-cyan-500/5',
-      iconBg: 'bg-gradient-to-br from-blue-500/20 to-cyan-500/10',
-      progress: gpaData ? (gpaData.cumulativeGPA / 4.0) * 100 : 0,
-    },
-    {
-      label: 'Credits Earned',
-      value: progress ? progress.totalCreditsEarned : '—',
-      subtitle: `of ${progress?.totalCreditsRequired || 120} required`,
-      icon: BookOpen,
-      gradient: 'from-emerald-500 to-green-500',
-      bgGradient: 'from-emerald-500/10 to-green-500/5',
-      iconBg: 'bg-gradient-to-br from-emerald-500/20 to-green-500/10',
-      progress: progress ? (progress.totalCreditsEarned / (progress.totalCreditsRequired || 120)) * 100 : 0,
-    },
-    {
-      label: 'Degree Progress',
-      value: progress ? `${progress.percentageComplete.toFixed(0)}%` : '—',
-      subtitle: 'Completion',
-      icon: Award,
-      gradient: 'from-purple-500 to-pink-500',
-      bgGradient: 'from-purple-500/10 to-pink-500/5',
-      iconBg: 'bg-gradient-to-br from-purple-500/20 to-pink-500/10',
-      progress: progress?.percentageComplete || 0,
-    },
-  ];
+    // Sort each day by start time
+    Object.keys(schedule).forEach(day => {
+      schedule[day].sort((a, b) => {
+        const timeA = a.startTime.split(':').map(Number);
+        const timeB = b.startTime.split(':').map(Number);
+        return timeA[0] * 60 + timeA[1] - (timeB[0] * 60 + timeB[1]);
+      });
+    });
 
-  const modules = [
-    {
-      title: 'Course Search',
-      description: 'Browse and enroll in available courses',
-      icon: BookOpen,
-      link: '/courses',
-      gradient: 'from-blue-600 to-cyan-600',
-      bgPattern: 'bg-blue-50 dark:bg-blue-950/30',
-    },
-    {
-      title: 'My Enrollments',
-      description: 'View and manage your enrolled courses',
-      icon: Edit3,
-      link: '/enrollments',
-      gradient: 'from-emerald-600 to-green-600',
-      bgPattern: 'bg-emerald-50 dark:bg-emerald-950/30',
-    },
-    {
-      title: 'Shopping Cart',
-      description: 'Review courses before enrolling',
-      icon: Target,
-      link: '/cart',
-      gradient: 'from-purple-600 to-pink-600',
-      bgPattern: 'bg-purple-50 dark:bg-purple-950/30',
-      badge: '4 courses',
-    },
-    {
-      title: 'My Grades',
-      description: 'View your grades and academic performance',
-      icon: BarChart3,
-      link: '/academic/grades',
-      gradient: 'from-indigo-600 to-blue-600',
-      bgPattern: 'bg-indigo-50 dark:bg-indigo-950/30',
-      stat: gpaData && `${gpaData.cumulativeGPA.toFixed(2)} GPA`,
-    },
-    {
-      title: 'Degree Planning',
-      description: 'Track your degree requirements',
-      icon: Target,
-      link: '/planning',
-      gradient: 'from-pink-600 to-rose-600',
-      bgPattern: 'bg-pink-50 dark:bg-pink-950/30',
-      stat: progress && `${progress.percentageComplete.toFixed(0)}% Complete`,
-    },
+    return schedule;
+  };
+
+  const weeklySchedule = buildWeeklySchedule();
+  const today = new Date().toLocaleDateString('en-US', { weekday: 'long' });
+
+  const quickAccessLinks = [
+    { label: 'My Enrollments', icon: BookOpen, link: '/enrollments', color: 'from-blue-500 to-cyan-500' },
+    { label: 'My Grades', icon: BarChart3, link: '/academic/grades', color: 'from-green-500 to-emerald-500' },
+    { label: 'Degree Planning', icon: Target, link: '/planning', color: 'from-purple-500 to-pink-500' },
+    { label: 'Transcript', icon: FileText, link: '/academic/transcript', color: 'from-orange-500 to-red-500' },
+    { label: 'Personal Info', icon: UserCircle, link: '/personal', color: 'from-indigo-500 to-blue-500' },
+    { label: 'Academic Calendar', icon: Calendar, link: '/academic-calendar', color: 'from-pink-500 to-rose-500' },
   ];
 
   return (
-    <div className="min-h-screen gradient-mesh">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-8">
-        {/* Hero Header */}
-        <div className="relative">
-          <div className="flex items-center justify-between">
-            <div>
-              <h1 className="text-4xl font-bold text-foreground mb-2 flex items-center gap-3">
-                <span className="text-gradient-primary">
-                  Welcome back, {user?.fullName?.split(' ')[0] || user?.fullName}!
-                </span>
-                <Sparkles className="h-8 w-8 text-primary animate-pulse" />
-              </h1>
-              <p className="text-lg text-muted-foreground">
-                Here's your academic overview for Fall 2024
-              </p>
-            </div>
-            <div className="hidden md:block">
-              <div className="flex items-center gap-2 px-4 py-2 rounded-full bg-primary/10 backdrop-blur-sm border border-primary/20">
-                <div className="w-2 h-2 rounded-full bg-green-500 animate-pulse" />
-                <span className="text-sm font-medium text-foreground">All Systems Operational</span>
-              </div>
-            </div>
-          </div>
+    <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        {/* Welcome Header */}
+        <div className="mb-8">
+          <h1 className="text-3xl font-bold text-gray-900 dark:text-white">
+            Welcome back, {user?.fullName?.split(' ')[0]}!
+          </h1>
+          <p className="mt-2 text-gray-600 dark:text-gray-400">
+            {new Date().toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}
+          </p>
         </div>
 
-        {/* Premium Stats Cards */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-          {quickStats.map((stat, index) => {
-            const Icon = stat.icon;
-            return (
-              <div
-                key={index}
-                className="stat-card group"
-                style={{ animationDelay: `${index * 100}ms` }}
+        {/* Quick Access */}
+        <div className="mb-8">
+          <h2 className="text-xl font-semibold text-gray-900 dark:text-white mb-4">Quick Access</h2>
+          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
+            {quickAccessLinks.map((item) => (
+              <Link
+                key={item.link}
+                to={item.link}
+                className="bg-white dark:bg-gray-800 rounded-xl p-4 hover:shadow-lg transition-all duration-200 hover:-translate-y-1 border border-gray-200 dark:border-gray-700"
               >
-                <div className="flex items-start justify-between mb-4">
-                  <div className={cn("p-3 rounded-xl", stat.iconBg)}>
-                    <Icon className={cn("h-6 w-6 bg-gradient-to-br bg-clip-text text-transparent", stat.gradient)} />
-                  </div>
-                  {stat.progress !== undefined && (
-                    <div className="flex items-center gap-2">
-                      <div className="text-xs font-semibold text-muted-foreground">
-                        {Math.round(stat.progress)}%
-                      </div>
-                      <div className="w-12 h-1.5 bg-muted rounded-full overflow-hidden">
-                        <div
-                          className={cn("h-full rounded-full bg-gradient-to-r transition-all duration-1000", stat.gradient)}
-                          style={{ width: `${stat.progress}%` }}
-                        />
-                      </div>
-                    </div>
-                  )}
+                <div className={`w-12 h-12 rounded-lg bg-gradient-to-br ${item.color} flex items-center justify-center mb-3`}>
+                  <item.icon className="w-6 h-6 text-white" />
                 </div>
-                <div>
-                  <p className="text-sm font-medium text-muted-foreground mb-1">{stat.label}</p>
-                  <p className={cn(
-                    "text-3xl font-bold mb-1 bg-gradient-to-br bg-clip-text text-transparent",
-                    stat.gradient
-                  )}>
-                    {stat.value}
-                  </p>
-                  <p className="text-sm text-muted-foreground">{stat.subtitle}</p>
-                </div>
-              </div>
-            );
-          })}
+                <p className="text-sm font-medium text-gray-900 dark:text-white">{item.label}</p>
+              </Link>
+            ))}
+          </div>
         </div>
 
-        {/* Alerts and Notifications */}
-        {(addDropStatus?.isOpen || (pendingEvaluations && pendingEvaluations.length > 0) || (upcomingEvents && upcomingEvents.length > 0)) && (
-          <div className="space-y-4">
-            {/* Add/Drop Period Alert */}
-            {addDropStatus?.isOpen && (
-              <Card className="border-success/50 bg-gradient-to-br from-success/5 to-transparent overflow-hidden">
-                <div className="absolute top-0 right-0 w-64 h-64 bg-gradient-to-br from-success/10 to-transparent rounded-full blur-3xl" />
-                <CardContent className="pt-6 relative">
-                  <div className="flex gap-4">
-                    <div className="flex-shrink-0">
-                      <div className="p-3 rounded-xl bg-success/10 border border-success/20">
-                        <Zap className="h-6 w-6 text-success" />
-                      </div>
-                    </div>
-                    <div className="flex-1">
-                      <div className="flex items-center gap-2 mb-2">
-                        <h3 className="font-bold text-foreground text-lg">Add/Drop Period is Open</h3>
-                        <Badge variant="success" className="animate-pulse">Active Now</Badge>
-                      </div>
-                      <p className="text-muted-foreground mb-4">
-                        You can add or drop courses until{' '}
-                        {addDropStatus.period?.end_date && new Date(addDropStatus.period.end_date).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })}
-                      </p>
-                      <Link to="/add-drop">
-                        <Button size="sm" className="shadow-lg shadow-success/20">
-                          Go to Add/Drop <ChevronRight className="ml-1 h-4 w-4" />
-                        </Button>
-                      </Link>
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
-            )}
-
-            {/* Pending Evaluations */}
-            {pendingEvaluations && pendingEvaluations.length > 0 && (
-              <Card className="border-warning/50 bg-gradient-to-br from-warning/5 to-transparent">
-                <CardContent className="pt-6">
-                  <div className="flex gap-4">
-                    <div className="flex-shrink-0">
-                      <div className="p-3 rounded-xl bg-warning/10 border border-warning/20">
-                        <Star className="h-6 w-6 text-warning" />
-                      </div>
-                    </div>
-                    <div className="flex-1">
-                      <h3 className="font-bold text-foreground mb-1">Course Evaluations Pending</h3>
-                      <p className="text-muted-foreground mb-4">
-                        {pendingEvaluations.length} course{pendingEvaluations.length !== 1 ? 's' : ''} waiting for your feedback
-                      </p>
-                      <Link to="/evaluations">
-                        <Button size="sm" variant="outline">
-                          Complete Evaluations <ChevronRight className="ml-1 h-4 w-4" />
-                        </Button>
-                      </Link>
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
-            )}
-          </div>
-        )}
-
-        {/* Quick Access Modules */}
-        <div>
-          <div className="flex items-center justify-between mb-6">
-            <h2 className="text-2xl font-bold text-foreground">Quick Access</h2>
-            <Link to="/courses" className="text-primary hover:text-primary/80 text-sm font-semibold flex items-center gap-1">
-              View All
-              <ChevronRight className="h-4 w-4" />
-            </Link>
-          </div>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
-            {modules.map((module, index) => {
-              const Icon = module.icon;
-              return (
-                <Link key={module.title} to={module.link}>
-                  <Card
-                    hover
-                    className="h-full group overflow-hidden"
-                    style={{ animationDelay: `${index * 50}ms` }}
-                  >
-                    <CardContent className="pt-6 relative">
-                      <div className={cn("absolute top-0 right-0 w-32 h-32 rounded-full blur-3xl opacity-20 transition-opacity group-hover:opacity-30", module.bgPattern)} />
-                      <div className="relative">
-                        <div className="flex items-start justify-between mb-4">
-                          <div className={cn("p-3 rounded-xl bg-gradient-to-br", module.gradient, "text-white shadow-lg")}>
-                            <Icon className="h-6 w-6" />
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+          {/* Weekly Schedule */}
+          <div className="lg:col-span-2">
+            <div className="bg-white dark:bg-gray-800 rounded-xl shadow-md border border-gray-200 dark:border-gray-700">
+              <div className="px-6 py-4 border-b border-gray-200 dark:border-gray-700">
+                <h2 className="text-xl font-semibold text-gray-900 dark:text-white flex items-center">
+                  <Calendar className="w-5 h-5 mr-2 text-primary" />
+                  This Week's Schedule
+                </h2>
+              </div>
+              <div className="p-6">
+                <div className="grid grid-cols-5 gap-3">
+                  {Object.entries(weeklySchedule).map(([day, classes]: [string, any[]]) => {
+                    const isToday = day === today;
+                    return (
+                      <div key={day} className={`${isToday ? 'ring-2 ring-primary rounded-lg' : ''}`}>
+                        <div className={`text-center pb-2 mb-3 border-b-2 ${isToday ? 'border-primary' : 'border-gray-200 dark:border-gray-700'}`}>
+                          <div className={`text-xs font-semibold uppercase ${isToday ? 'text-primary' : 'text-gray-500 dark:text-gray-400'}`}>
+                            {day.substring(0, 3)}
                           </div>
-                          {(module.stat || module.badge) && (
-                            <Badge variant={module.alert ? 'warning' : 'secondary'} className="shadow-sm">
-                              {module.stat || module.badge}
-                            </Badge>
+                          {isToday && (
+                            <div className="text-xs text-primary font-medium mt-1">Today</div>
                           )}
                         </div>
-                        <h3 className="font-bold text-foreground mb-2 text-lg">{module.title}</h3>
-                        <p className="text-sm text-muted-foreground mb-4">{module.description}</p>
-                        <div className="flex items-center text-sm text-primary font-semibold group-hover:gap-2 transition-all">
-                          Access <ChevronRight className="h-4 w-4 group-hover:translate-x-1 transition-transform" />
+                        <div className="space-y-2">
+                          {classes.length > 0 ? (
+                            classes.map((cls, idx) => (
+                              <div
+                                key={idx}
+                                className="bg-gradient-to-br from-primary/10 to-primary/5 dark:from-primary/20 dark:to-primary/10 rounded-lg p-2 border border-primary/20"
+                              >
+                                <div className="text-xs font-semibold text-primary mb-1">
+                                  {cls.courseCode}
+                                </div>
+                                <div className="text-xs text-gray-600 dark:text-gray-300 flex items-center">
+                                  <Clock className="w-3 h-3 mr-1" />
+                                  {cls.startTime.substring(0, 5)}
+                                </div>
+                                {cls.location && (
+                                  <div className="text-xs text-gray-500 dark:text-gray-400 flex items-center mt-1">
+                                    <MapPin className="w-3 h-3 mr-1" />
+                                    {cls.location}
+                                  </div>
+                                )}
+                              </div>
+                            ))
+                          ) : (
+                            <div className="text-xs text-gray-400 dark:text-gray-500 text-center py-4">
+                              No classes
+                            </div>
+                          )}
                         </div>
                       </div>
-                    </CardContent>
-                  </Card>
-                </Link>
-              );
-            })}
-          </div>
-        </div>
-
-        {/* Latest Announcement */}
-        {announcements && announcements.length > 0 && (
-          <Card className="border-primary/20 bg-gradient-to-br from-primary/5 to-transparent">
-            <CardContent className="pt-6">
-              <div className="flex gap-4">
-                <div className="flex-shrink-0">
-                  <div className="p-3 rounded-xl bg-primary/10 border border-primary/20">
-                    <Info className="h-6 w-6 text-primary" />
-                  </div>
-                </div>
-                <div className="flex-1">
-                  <div className="flex items-center gap-2 mb-2">
-                    <h3 className="font-bold text-foreground">Latest Announcement</h3>
-                    <Badge variant="info" className="text-xs">New</Badge>
-                  </div>
-                  <p className="font-semibold text-foreground mb-2">{announcements[0].title}</p>
-                  <p className="text-sm text-muted-foreground line-clamp-2 mb-4">
-                    {announcements[0].content}
-                  </p>
-                  <Link to="/campus">
-                    <Button size="sm" variant="ghost">
-                      View All Announcements <ChevronRight className="ml-1 h-4 w-4" />
-                    </Button>
-                  </Link>
+                    );
+                  })}
                 </div>
               </div>
-            </CardContent>
-          </Card>
-        )}
+            </div>
+
+            {/* Academic Calendar */}
+            <div className="mt-8 bg-white dark:bg-gray-800 rounded-xl shadow-md border border-gray-200 dark:border-gray-700">
+              <div className="px-6 py-4 border-b border-gray-200 dark:border-gray-700 flex items-center justify-between">
+                <h2 className="text-xl font-semibold text-gray-900 dark:text-white flex items-center">
+                  <Calendar className="w-5 h-5 mr-2 text-primary" />
+                  Academic Calendar
+                </h2>
+                <Link to="/academic-calendar" className="text-sm text-primary hover:text-primary/80 font-medium flex items-center">
+                  View All
+                  <ChevronRight className="w-4 h-4 ml-1" />
+                </Link>
+              </div>
+              <div className="p-6">
+                <div className="space-y-4">
+                  {/* Hardcoded important dates for Fall 2024 */}
+                  <div className="flex items-start space-x-4 p-3 bg-blue-50 dark:bg-blue-950/30 rounded-lg border border-blue-200 dark:border-blue-800">
+                    <div className="flex-shrink-0 w-12 text-center">
+                      <div className="text-2xl font-bold text-primary">15</div>
+                      <div className="text-xs text-gray-600 dark:text-gray-400">Nov</div>
+                    </div>
+                    <div className="flex-1">
+                      <h4 className="font-semibold text-gray-900 dark:text-white">Add/Drop Deadline</h4>
+                      <p className="text-sm text-gray-600 dark:text-gray-400">Last day to add or drop courses</p>
+                    </div>
+                  </div>
+                  <div className="flex items-start space-x-4 p-3 bg-purple-50 dark:bg-purple-950/30 rounded-lg border border-purple-200 dark:border-purple-800">
+                    <div className="flex-shrink-0 w-12 text-center">
+                      <div className="text-2xl font-bold text-purple-600">10</div>
+                      <div className="text-xs text-gray-600 dark:text-gray-400">Dec</div>
+                    </div>
+                    <div className="flex-1">
+                      <h4 className="font-semibold text-gray-900 dark:text-white">Final Exams Begin</h4>
+                      <p className="text-sm text-gray-600 dark:text-gray-400">Fall 2024 final examination period</p>
+                    </div>
+                  </div>
+                  <div className="flex items-start space-x-4 p-3 bg-green-50 dark:bg-green-950/30 rounded-lg border border-green-200 dark:border-green-800">
+                    <div className="flex-shrink-0 w-12 text-center">
+                      <div className="text-2xl font-bold text-green-600">20</div>
+                      <div className="text-xs text-gray-600 dark:text-gray-400">Dec</div>
+                    </div>
+                    <div className="flex-1">
+                      <h4 className="font-semibold text-gray-900 dark:text-white">Fall Semester Ends</h4>
+                      <p className="text-sm text-gray-600 dark:text-gray-400">End of Fall 2024 semester</p>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* News & Announcements */}
+          <div className="lg:col-span-1">
+            <div className="bg-white dark:bg-gray-800 rounded-xl shadow-md border border-gray-200 dark:border-gray-700">
+              <div className="px-6 py-4 border-b border-gray-200 dark:border-gray-700 flex items-center justify-between">
+                <h2 className="text-xl font-semibold text-gray-900 dark:text-white flex items-center">
+                  <Bell className="w-5 h-5 mr-2 text-primary" />
+                  News & Announcements
+                </h2>
+                <Link to="/campus" className="text-sm text-primary hover:text-primary/80 font-medium flex items-center">
+                  View All
+                  <ChevronRight className="w-4 h-4 ml-1" />
+                </Link>
+              </div>
+              <div className="p-6">
+                {announcements && announcements.length > 0 ? (
+                  <div className="space-y-4">
+                    {announcements.slice(0, 5).map((announcement: any) => (
+                      <div key={announcement.id} className="pb-4 border-b border-gray-200 dark:border-gray-700 last:border-0 last:pb-0">
+                        <div className="flex items-start justify-between mb-2">
+                          <span className={`text-xs px-2 py-1 rounded-full font-semibold ${
+                            announcement.type === 'URGENT'
+                              ? 'bg-red-100 text-red-700 dark:bg-red-950 dark:text-red-400'
+                              : announcement.type === 'ACADEMIC'
+                              ? 'bg-blue-100 text-blue-700 dark:bg-blue-950 dark:text-blue-400'
+                              : 'bg-gray-100 text-gray-700 dark:bg-gray-700 dark:text-gray-300'
+                          }`}>
+                            {announcement.type}
+                          </span>
+                        </div>
+                        <h4 className="font-semibold text-gray-900 dark:text-white text-sm mb-1">
+                          {announcement.title}
+                        </h4>
+                        <p className="text-xs text-gray-600 dark:text-gray-400 line-clamp-2">
+                          {announcement.content}
+                        </p>
+                        <p className="text-xs text-gray-500 dark:text-gray-500 mt-2">
+                          {new Date(announcement.posted_at).toLocaleDateString()}
+                        </p>
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <div className="text-center py-8">
+                    <Bell className="w-12 h-12 text-gray-300 dark:text-gray-600 mx-auto mb-3" />
+                    <p className="text-sm text-gray-500 dark:text-gray-400">No announcements</p>
+                  </div>
+                )}
+              </div>
+            </div>
+          </div>
+        </div>
       </div>
     </div>
   );

@@ -1,7 +1,18 @@
 import { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { Link, useNavigate } from 'react-router-dom';
 import api from '../services/api';
 import { useAuth } from '../context/AuthContext';
+import {
+  BookOpen,
+  Search,
+  ChevronDown,
+  ChevronRight,
+  AlertCircle,
+  Star,
+  Clock,
+  Users
+} from 'lucide-react';
 
 interface Enrollment {
   id: number;
@@ -25,18 +36,31 @@ interface Enrollment {
   };
 }
 
+interface Course {
+  id: number;
+  courseCode: string;
+  courseName: string;
+  credits: number;
+  department: string;
+  instructor: {
+    fullName: string;
+  } | null;
+}
+
 export function MyEnrollments() {
   const { user } = useAuth();
   const queryClient = useQueryClient();
-  const [dropMessage, setDropMessage] = useState<{ enrollmentId: number; message: string } | null>(
-    null
-  );
+  const navigate = useNavigate();
+  const [activeTab, setActiveTab] = useState<'enrollments' | 'search'>('enrollments');
+  const [searchQuery, setSearchQuery] = useState('');
+  const [selectedDepartment, setSelectedDepartment] = useState('');
+  const [expandedDepartments, setExpandedDepartments] = useState<Set<string>>(new Set());
+  const [dropMessage, setDropMessage] = useState<{ enrollmentId: number; message: string } | null>(null);
 
-  const { data: enrollments, isLoading } = useQuery<Enrollment[]>({
+  const { data: enrollments, isLoading: enrollmentsLoading } = useQuery<Enrollment[]>({
     queryKey: ['my-enrollments'],
     queryFn: async () => {
       const response = await api.get('/enrollments/my-courses');
-      // Transform backend data (snake_case) to frontend format (camelCase)
       return response.data.data.map((enrollment: any) => ({
         id: enrollment.id,
         status: enrollment.status,
@@ -61,6 +85,33 @@ export function MyEnrollments() {
     },
   });
 
+  const { data: allCourses, isLoading: coursesLoading } = useQuery<Course[]>({
+    queryKey: ['all-courses'],
+    queryFn: async () => {
+      const response = await api.get('/courses');
+      return response.data.data.map((course: any) => ({
+        id: course.id,
+        courseCode: course.course_code,
+        courseName: course.course_name,
+        credits: course.credits,
+        department: course.department,
+        instructor: course.users ? {
+          fullName: course.users.full_name
+        } : null,
+      }));
+    },
+    enabled: activeTab === 'search',
+  });
+
+  const { data: departments } = useQuery<string[]>({
+    queryKey: ['departments'],
+    queryFn: async () => {
+      const response = await api.get('/courses/departments');
+      return response.data.data;
+    },
+    enabled: activeTab === 'search',
+  });
+
   const dropMutation = useMutation({
     mutationFn: async (enrollmentId: number) => {
       await api.delete(`/enrollments/${enrollmentId}`);
@@ -71,7 +122,6 @@ export function MyEnrollments() {
         message: 'Successfully dropped course',
       });
       queryClient.invalidateQueries({ queryKey: ['my-enrollments'] });
-      queryClient.invalidateQueries({ queryKey: ['courses'] });
       setTimeout(() => setDropMessage(null), 3000);
     },
     onError: (error: any, enrollmentId) => {
@@ -83,283 +133,427 @@ export function MyEnrollments() {
     },
   });
 
-  if (isLoading) {
-    return (
-      <div className="min-h-screen flex items-center justify-center">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary-600"></div>
-      </div>
-    );
-  }
-
-  const confirmedEnrollments = enrollments?.filter((e) => e.status === 'CONFIRMED') || [];
-  const waitlistedEnrollments = enrollments?.filter((e) => e.status === 'WAITLISTED') || [];
-
-  const totalCredits = confirmedEnrollments.reduce(
-    (sum, enrollment) => sum + enrollment.course.credits,
-    0
-  );
-
   const handleDrop = (enrollmentId: number) => {
     if (window.confirm('Are you sure you want to drop this course?')) {
       dropMutation.mutate(enrollmentId);
     }
   };
 
-  // Build schedule view
-  const daysOfWeek = ['MONDAY', 'TUESDAY', 'WEDNESDAY', 'THURSDAY', 'FRIDAY', 'SATURDAY', 'SUNDAY'];
-  const scheduleByDay: Record<string, Array<{ course: string; time: string; location: string }>> =
-    {};
+  const toggleDepartment = (dept: string) => {
+    const newExpanded = new Set(expandedDepartments);
+    if (newExpanded.has(dept)) {
+      newExpanded.delete(dept);
+    } else {
+      newExpanded.add(dept);
+    }
+    setExpandedDepartments(newExpanded);
+  };
 
-  confirmedEnrollments.forEach((enrollment) => {
-    enrollment.course.timeSlots.forEach((slot) => {
-      if (!scheduleByDay[slot.dayOfWeek]) {
-        scheduleByDay[slot.dayOfWeek] = [];
-      }
-      scheduleByDay[slot.dayOfWeek].push({
-        course: `${enrollment.course.courseCode} - ${enrollment.course.courseName}`,
-        time: `${slot.startTime} - ${slot.endTime}`,
-        location: slot.location,
-      });
-    });
+  const confirmedEnrollments = enrollments?.filter((e) => e.status === 'CONFIRMED') || [];
+  const waitlistedEnrollments = enrollments?.filter((e) => e.status === 'WAITLISTED') || [];
+  const totalCredits = confirmedEnrollments.reduce((sum, enrollment) => sum + enrollment.course.credits, 0);
+
+  // Filter courses for search
+  const filteredCourses = allCourses?.filter((course) => {
+    const matchesSearch =
+      searchQuery === '' ||
+      course.courseCode.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      course.courseName.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      (course.instructor?.fullName?.toLowerCase().includes(searchQuery.toLowerCase()) ?? false);
+
+    const matchesDepartment =
+      selectedDepartment === '' || course.department === selectedDepartment;
+
+    return matchesSearch && matchesDepartment;
   });
 
+  // Group courses by department
+  const coursesByDepartment = filteredCourses?.reduce((acc, course) => {
+    const dept = course.department;
+    if (!acc[dept]) {
+      acc[dept] = [];
+    }
+    acc[dept].push(course);
+    return acc;
+  }, {} as Record<string, Course[]>);
+
+  // Check for pending evaluations (mock data for now)
+  const pendingEvaluations = confirmedEnrollments.filter(() => Math.random() > 0.7);
+
+  if (enrollmentsLoading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
+      </div>
+    );
+  }
+
   return (
-    <div className="max-w-7xl mx-auto py-6 sm:px-6 lg:px-8">
-      <div className="px-4 py-6 sm:px-0">
-        <div className="mb-6">
-          <h2 className="text-3xl font-bold text-gray-900 mb-2">My Enrollments</h2>
-          <p className="text-gray-600">
-            {user?.fullName} • {confirmedEnrollments.length} courses enrolled • {totalCredits}{' '}
-            credits
+    <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        {/* Header */}
+        <div className="mb-8">
+          <h1 className="text-3xl font-bold text-gray-900 dark:text-white mb-2">My Enrollments</h1>
+          <p className="text-gray-600 dark:text-gray-400">
+            {confirmedEnrollments.length} courses enrolled • {totalCredits} credits
           </p>
         </div>
 
-        {/* Summary Cards */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
-          <div className="card bg-green-50 border-green-200">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm text-green-700 font-medium">Enrolled Courses</p>
-                <p className="text-3xl font-bold text-green-900">{confirmedEnrollments.length}</p>
-              </div>
-              <div className="bg-green-100 p-3 rounded-full">
-                <svg
-                  className="w-8 h-8 text-green-600"
-                  fill="none"
-                  stroke="currentColor"
-                  viewBox="0 0 24 24"
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={2}
-                    d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"
-                  />
-                </svg>
+        {/* Pending Evaluations Alert */}
+        {pendingEvaluations.length > 0 && (
+          <div className="mb-6 bg-yellow-50 dark:bg-yellow-950/30 border-l-4 border-yellow-400 p-4 rounded-lg">
+            <div className="flex items-start">
+              <AlertCircle className="w-5 h-5 text-yellow-600 mr-3 mt-0.5" />
+              <div className="flex-1">
+                <h3 className="text-sm font-semibold text-yellow-800 dark:text-yellow-300">
+                  Course Evaluations Pending
+                </h3>
+                <p className="text-sm text-yellow-700 dark:text-yellow-400 mt-1">
+                  You have {pendingEvaluations.length} course evaluation{pendingEvaluations.length !== 1 ? 's' : ''} waiting for your feedback.
+                </p>
+                <div className="mt-3 space-y-2">
+                  {pendingEvaluations.map((enrollment) => (
+                    <Link
+                      key={enrollment.id}
+                      to="/evaluations"
+                      className="flex items-center text-sm text-yellow-800 dark:text-yellow-300 hover:text-yellow-900 dark:hover:text-yellow-200"
+                    >
+                      <Star className="w-4 h-4 mr-2" />
+                      <span className="font-medium">{enrollment.course.courseCode}</span>
+                      <span className="mx-2">-</span>
+                      <span>{enrollment.course.courseName}</span>
+                      <ChevronRight className="w-4 h-4 ml-auto" />
+                    </Link>
+                  ))}
+                </div>
               </div>
             </div>
           </div>
+        )}
 
-          <div className="card bg-blue-50 border-blue-200">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm text-blue-700 font-medium">Total Credits</p>
-                <p className="text-3xl font-bold text-blue-900">{totalCredits}</p>
-              </div>
-              <div className="bg-blue-100 p-3 rounded-full">
-                <svg
-                  className="w-8 h-8 text-blue-600"
-                  fill="none"
-                  stroke="currentColor"
-                  viewBox="0 0 24 24"
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={2}
-                    d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"
-                  />
-                </svg>
-              </div>
-            </div>
-          </div>
-
-          <div className="card bg-yellow-50 border-yellow-200">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm text-yellow-700 font-medium">Waitlisted</p>
-                <p className="text-3xl font-bold text-yellow-900">{waitlistedEnrollments.length}</p>
-              </div>
-              <div className="bg-yellow-100 p-3 rounded-full">
-                <svg
-                  className="w-8 h-8 text-yellow-600"
-                  fill="none"
-                  stroke="currentColor"
-                  viewBox="0 0 24 24"
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={2}
-                    d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"
-                  />
-                </svg>
-              </div>
-            </div>
-          </div>
+        {/* Tabs */}
+        <div className="mb-6 border-b border-gray-200 dark:border-gray-700">
+          <nav className="-mb-px flex space-x-8">
+            <button
+              onClick={() => setActiveTab('enrollments')}
+              className={`py-4 px-1 border-b-2 font-medium text-sm transition-colors ${
+                activeTab === 'enrollments'
+                  ? 'border-primary text-primary'
+                  : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300 dark:text-gray-400 dark:hover:text-gray-300'
+              }`}
+            >
+              My Courses
+            </button>
+            <button
+              onClick={() => setActiveTab('search')}
+              className={`py-4 px-1 border-b-2 font-medium text-sm transition-colors ${
+                activeTab === 'search'
+                  ? 'border-primary text-primary'
+                  : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300 dark:text-gray-400 dark:hover:text-gray-300'
+              }`}
+            >
+              Course Search
+            </button>
+          </nav>
         </div>
 
-        {/* Weekly Schedule */}
-        {confirmedEnrollments.length > 0 && (
-          <div className="card mb-6">
-            <h3 className="text-xl font-bold text-gray-900 mb-4">Weekly Schedule</h3>
-            <div className="space-y-4">
-              {daysOfWeek.map((day) => {
-                const daySchedule = scheduleByDay[day];
-                if (!daySchedule || daySchedule.length === 0) return null;
+        {/* My Courses Tab */}
+        {activeTab === 'enrollments' && (
+          <div className="space-y-6">
+            {/* Summary Cards */}
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <div className="bg-white dark:bg-gray-800 rounded-xl p-6 border border-gray-200 dark:border-gray-700">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-sm text-gray-600 dark:text-gray-400 font-medium">Enrolled Courses</p>
+                    <p className="text-3xl font-bold text-gray-900 dark:text-white mt-1">
+                      {confirmedEnrollments.length}
+                    </p>
+                  </div>
+                  <div className="bg-green-100 dark:bg-green-950 p-3 rounded-lg">
+                    <BookOpen className="w-6 h-6 text-green-600" />
+                  </div>
+                </div>
+              </div>
 
-                return (
-                  <div key={day} className="border-l-4 border-primary-500 pl-4">
-                    <h4 className="font-semibold text-gray-900 mb-2">{day}</h4>
-                    <div className="space-y-2">
-                      {daySchedule.map((item, index) => (
-                        <div key={index} className="bg-gray-50 p-3 rounded">
-                          <p className="font-medium text-gray-900">{item.course}</p>
-                          <p className="text-sm text-gray-600">
-                            {item.time} • {item.location}
+              <div className="bg-white dark:bg-gray-800 rounded-xl p-6 border border-gray-200 dark:border-gray-700">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-sm text-gray-600 dark:text-gray-400 font-medium">Total Credits</p>
+                    <p className="text-3xl font-bold text-gray-900 dark:text-white mt-1">{totalCredits}</p>
+                  </div>
+                  <div className="bg-blue-100 dark:bg-blue-950 p-3 rounded-lg">
+                    <Users className="w-6 h-6 text-blue-600" />
+                  </div>
+                </div>
+              </div>
+
+              <div className="bg-white dark:bg-gray-800 rounded-xl p-6 border border-gray-200 dark:border-gray-700">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-sm text-gray-600 dark:text-gray-400 font-medium">Waitlisted</p>
+                    <p className="text-3xl font-bold text-gray-900 dark:text-white mt-1">
+                      {waitlistedEnrollments.length}
+                    </p>
+                  </div>
+                  <div className="bg-yellow-100 dark:bg-yellow-950 p-3 rounded-lg">
+                    <Clock className="w-6 h-6 text-yellow-600" />
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* Enrolled Courses List */}
+            {confirmedEnrollments.length > 0 ? (
+              <div>
+                <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">Enrolled Courses</h3>
+                <div className="space-y-4">
+                  {confirmedEnrollments.map((enrollment) => (
+                    <div
+                      key={enrollment.id}
+                      className="bg-white dark:bg-gray-800 rounded-xl p-6 border border-gray-200 dark:border-gray-700"
+                    >
+                      <div className="flex justify-between items-start">
+                        <div className="flex-1">
+                          <div className="flex items-center gap-3 mb-2">
+                            <h4 className="text-xl font-bold text-gray-900 dark:text-white">
+                              {enrollment.course.courseCode}
+                            </h4>
+                            <span className="px-3 py-1 bg-green-100 dark:bg-green-950 text-green-700 dark:text-green-400 text-xs font-semibold rounded-full">
+                              Enrolled
+                            </span>
+                            <span className="px-3 py-1 bg-blue-100 dark:bg-blue-950 text-blue-700 dark:text-blue-400 text-xs font-semibold rounded-full">
+                              {enrollment.course.credits} Credits
+                            </span>
+                          </div>
+                          <p className="text-lg text-gray-700 dark:text-gray-300 mb-3">
+                            {enrollment.course.courseName}
+                          </p>
+                          <div className="grid grid-cols-1 md:grid-cols-2 gap-3 text-sm text-gray-600 dark:text-gray-400">
+                            <div>
+                              <span className="font-medium">Instructor:</span>{' '}
+                              {enrollment.course.instructor?.fullName || 'TBA'}
+                            </div>
+                            <div>
+                              <span className="font-medium">Department:</span> {enrollment.course.department}
+                            </div>
+                          </div>
+                        </div>
+                        <button
+                          onClick={() => handleDrop(enrollment.id)}
+                          disabled={dropMutation.isPending}
+                          className="ml-4 px-4 py-2 bg-red-50 dark:bg-red-950 text-red-600 dark:text-red-400 hover:bg-red-100 dark:hover:bg-red-900 rounded-lg font-medium transition-colors"
+                        >
+                          Drop Course
+                        </button>
+                      </div>
+
+                      {dropMessage?.enrollmentId === enrollment.id && (
+                        <div
+                          className={`mt-4 px-4 py-2 rounded-lg text-sm ${
+                            dropMessage.message.includes('Success')
+                              ? 'bg-green-50 dark:bg-green-950 text-green-800 dark:text-green-400 border border-green-200 dark:border-green-800'
+                              : 'bg-red-50 dark:bg-red-950 text-red-800 dark:text-red-400 border border-red-200 dark:border-red-800'
+                          }`}
+                        >
+                          {dropMessage.message}
+                        </div>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              </div>
+            ) : (
+              <div className="bg-white dark:bg-gray-800 rounded-xl p-12 border border-gray-200 dark:border-gray-700 text-center">
+                <BookOpen className="w-16 h-16 text-gray-300 dark:text-gray-600 mx-auto mb-4" />
+                <h3 className="text-lg font-medium text-gray-900 dark:text-white mb-2">No enrollments yet</h3>
+                <p className="text-gray-500 dark:text-gray-400 mb-4">
+                  Start by browsing available courses and enrolling in classes.
+                </p>
+                <button
+                  onClick={() => setActiveTab('search')}
+                  className="px-6 py-2 bg-primary text-white rounded-lg hover:bg-primary/90 font-medium"
+                >
+                  Browse Courses
+                </button>
+              </div>
+            )}
+
+            {/* Waitlisted Courses */}
+            {waitlistedEnrollments.length > 0 && (
+              <div>
+                <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">Waitlisted Courses</h3>
+                <div className="space-y-4">
+                  {waitlistedEnrollments.map((enrollment) => (
+                    <div
+                      key={enrollment.id}
+                      className="bg-yellow-50 dark:bg-yellow-950/30 rounded-xl p-6 border border-yellow-200 dark:border-yellow-800"
+                    >
+                      <div className="flex justify-between items-start">
+                        <div className="flex-1">
+                          <div className="flex items-center gap-3 mb-2">
+                            <h4 className="text-xl font-bold text-gray-900 dark:text-white">
+                              {enrollment.course.courseCode}
+                            </h4>
+                            <span className="px-3 py-1 bg-yellow-100 dark:bg-yellow-900 text-yellow-700 dark:text-yellow-300 text-xs font-semibold rounded-full">
+                              Waitlisted
+                            </span>
+                          </div>
+                          <p className="text-lg text-gray-700 dark:text-gray-300 mb-2">
+                            {enrollment.course.courseName}
+                          </p>
+                          <p className="text-sm text-yellow-700 dark:text-yellow-400">
+                            You will be automatically enrolled when a seat becomes available.
                           </p>
                         </div>
-                      ))}
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
-          </div>
-        )}
-
-        {/* Enrolled Courses */}
-        {confirmedEnrollments.length > 0 && (
-          <div className="mb-6">
-            <h3 className="text-xl font-bold text-gray-900 mb-4">Enrolled Courses</h3>
-            <div className="space-y-4">
-              {confirmedEnrollments.map((enrollment) => (
-                <div key={enrollment.id} className="card">
-                  <div className="flex justify-between items-start">
-                    <div className="flex-1">
-                      <div className="flex items-center gap-3 mb-2">
-                        <h4 className="text-lg font-bold text-gray-900">
-                          {enrollment.course.courseCode}
-                        </h4>
-                        <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
-                          Enrolled
-                        </span>
-                        <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
-                          {enrollment.course.credits} Credits
-                        </span>
-                      </div>
-                      <p className="text-gray-700 font-medium mb-2">
-                        {enrollment.course.courseName}
-                      </p>
-                      <div className="text-sm text-gray-600 space-y-1">
-                        <p>
-                          <span className="font-medium">Instructor:</span>{' '}
-                          {enrollment.course.instructor?.fullName || 'TBA'}
-                        </p>
-                        <p>
-                          <span className="font-medium">Department:</span>{' '}
-                          {enrollment.course.department}
-                        </p>
-                        <p>
-                          <span className="font-medium">Enrolled:</span>{' '}
-                          {new Date(enrollment.enrolledAt).toLocaleDateString()}
-                        </p>
+                        <button
+                          onClick={() => handleDrop(enrollment.id)}
+                          disabled={dropMutation.isPending}
+                          className="ml-4 px-4 py-2 bg-red-50 dark:bg-red-950 text-red-600 dark:text-red-400 hover:bg-red-100 dark:hover:bg-red-900 rounded-lg font-medium transition-colors"
+                        >
+                          Leave Waitlist
+                        </button>
                       </div>
                     </div>
-                    <button
-                      onClick={() => handleDrop(enrollment.id)}
-                      disabled={dropMutation.isPending}
-                      className="btn-secondary text-red-600 hover:bg-red-50 ml-4"
-                    >
-                      Drop Course
-                    </button>
-                  </div>
-
-                  {dropMessage?.enrollmentId === enrollment.id && (
-                    <div
-                      className={`mt-4 px-4 py-2 rounded text-sm ${
-                        dropMessage.message.includes('Success')
-                          ? 'bg-green-50 text-green-800 border border-green-200'
-                          : 'bg-red-50 text-red-800 border border-red-200'
-                      }`}
-                    >
-                      {dropMessage.message}
-                    </div>
-                  )}
+                  ))}
                 </div>
-              ))}
-            </div>
+              </div>
+            )}
           </div>
         )}
 
-        {/* Waitlisted Courses */}
-        {waitlistedEnrollments.length > 0 && (
-          <div className="mb-6">
-            <h3 className="text-xl font-bold text-gray-900 mb-4">Waitlisted Courses</h3>
-            <div className="space-y-4">
-              {waitlistedEnrollments.map((enrollment) => (
-                <div key={enrollment.id} className="card bg-yellow-50 border-yellow-200">
-                  <div className="flex justify-between items-start">
-                    <div className="flex-1">
-                      <div className="flex items-center gap-3 mb-2">
-                        <h4 className="text-lg font-bold text-gray-900">
-                          {enrollment.course.courseCode}
-                        </h4>
-                        <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-yellow-100 text-yellow-800">
-                          Waitlisted
-                        </span>
-                      </div>
-                      <p className="text-gray-700 font-medium mb-2">
-                        {enrollment.course.courseName}
-                      </p>
-                      <p className="text-sm text-yellow-700">
-                        You will be automatically enrolled when a seat becomes available.
-                      </p>
-                    </div>
-                    <button
-                      onClick={() => handleDrop(enrollment.id)}
-                      disabled={dropMutation.isPending}
-                      className="btn-secondary text-red-600 hover:bg-red-50 ml-4"
-                    >
-                      Leave Waitlist
-                    </button>
+        {/* Course Search Tab */}
+        {activeTab === 'search' && (
+          <div className="space-y-6">
+            {/* Search and Filters */}
+            <div className="bg-white dark:bg-gray-800 rounded-xl p-6 border border-gray-200 dark:border-gray-700">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                  <label htmlFor="search" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                    Search Courses
+                  </label>
+                  <div className="relative">
+                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
+                    <input
+                      type="text"
+                      id="search"
+                      className="w-full pl-10 pr-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+                      placeholder="Search by code, name, or instructor..."
+                      value={searchQuery}
+                      onChange={(e) => setSearchQuery(e.target.value)}
+                    />
                   </div>
                 </div>
-              ))}
+                <div>
+                  <label htmlFor="department" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                    Department
+                  </label>
+                  <select
+                    id="department"
+                    className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+                    value={selectedDepartment}
+                    onChange={(e) => setSelectedDepartment(e.target.value)}
+                  >
+                    <option value="">All Departments</option>
+                    {departments?.map((dept) => (
+                      <option key={dept} value={dept}>
+                        {dept}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+              </div>
+              <div className="mt-4 text-sm text-gray-600 dark:text-gray-400">
+                {filteredCourses?.length || 0} courses found
+              </div>
             </div>
-          </div>
-        )}
 
-        {/* Empty State */}
-        {enrollments?.length === 0 && (
-          <div className="card text-center py-12">
-            <svg
-              className="mx-auto h-12 w-12 text-gray-400"
-              fill="none"
-              stroke="currentColor"
-              viewBox="0 0 24 24"
-            >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth={2}
-                d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"
-              />
-            </svg>
-            <h3 className="mt-2 text-lg font-medium text-gray-900">No enrollments yet</h3>
-            <p className="mt-1 text-sm text-gray-500">
-              Start by browsing available courses and enrolling in classes you're interested in.
-            </p>
+            {/* Courses by Department */}
+            {coursesLoading ? (
+              <div className="flex items-center justify-center py-12">
+                <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
+              </div>
+            ) : coursesByDepartment && Object.keys(coursesByDepartment).length > 0 ? (
+              <div className="space-y-4">
+                {Object.entries(coursesByDepartment)
+                  .sort(([deptA], [deptB]) => deptA.localeCompare(deptB))
+                  .map(([department, deptCourses]) => {
+                    const isExpanded = expandedDepartments.has(department);
+                    return (
+                      <div
+                        key={department}
+                        className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 overflow-hidden"
+                      >
+                        {/* Department Header */}
+                        <button
+                          onClick={() => toggleDepartment(department)}
+                          className="w-full px-6 py-4 flex items-center justify-between hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
+                        >
+                          <div className="flex items-center gap-3">
+                            <div className="w-10 h-10 rounded-lg bg-primary/10 text-primary flex items-center justify-center font-semibold">
+                              {department.substring(0, 2).toUpperCase()}
+                            </div>
+                            <div className="text-left">
+                              <h3 className="text-lg font-semibold text-gray-900 dark:text-white">{department}</h3>
+                              <p className="text-sm text-gray-600 dark:text-gray-400">
+                                {deptCourses.length} course{deptCourses.length !== 1 ? 's' : ''}
+                              </p>
+                            </div>
+                          </div>
+                          <ChevronDown
+                            className={`w-5 h-5 text-gray-400 transition-transform ${
+                              isExpanded ? 'rotate-180' : ''
+                            }`}
+                          />
+                        </button>
+
+                        {/* Course List */}
+                        {isExpanded && (
+                          <div className="border-t border-gray-200 dark:border-gray-700">
+                            <div className="divide-y divide-gray-200 dark:divide-gray-700">
+                              {deptCourses.map((course) => (
+                                <button
+                                  key={course.id}
+                                  onClick={() => navigate(`/courses/${course.id}`)}
+                                  className="w-full px-6 py-4 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors text-left"
+                                >
+                                  <div className="flex items-center justify-between">
+                                    <div className="flex-1">
+                                      <div className="flex items-center gap-3 mb-1">
+                                        <span className="font-semibold text-primary">{course.courseCode}</span>
+                                        <span className="text-sm text-gray-600 dark:text-gray-400">
+                                          {course.credits} credits
+                                        </span>
+                                      </div>
+                                      <h4 className="text-gray-900 dark:text-white font-medium mb-1">
+                                        {course.courseName}
+                                      </h4>
+                                      {course.instructor && (
+                                        <p className="text-sm text-gray-600 dark:text-gray-400">
+                                          {course.instructor.fullName}
+                                        </p>
+                                      )}
+                                    </div>
+                                    <ChevronRight className="w-5 h-5 text-gray-400 flex-shrink-0 ml-4" />
+                                  </div>
+                                </button>
+                              ))}
+                            </div>
+                          </div>
+                        )}
+                      </div>
+                    );
+                  })}
+              </div>
+            ) : (
+              <div className="bg-white dark:bg-gray-800 rounded-xl p-12 border border-gray-200 dark:border-gray-700 text-center">
+                <Search className="w-16 h-16 text-gray-300 dark:text-gray-600 mx-auto mb-4" />
+                <h3 className="text-lg font-medium text-gray-900 dark:text-white mb-2">No courses found</h3>
+                <p className="text-gray-500 dark:text-gray-400">
+                  Try adjusting your search criteria
+                </p>
+              </div>
+            )}
           </div>
         )}
       </div>

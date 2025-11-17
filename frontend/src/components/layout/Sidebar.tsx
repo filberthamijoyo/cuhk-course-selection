@@ -33,9 +33,8 @@ export function Sidebar({ isOpen, onClose }: SidebarProps) {
 
   const studentNavItems = [
     { path: '/', label: 'Dashboard', icon: LayoutDashboard },
-    { path: '/courses', label: 'Course Search', icon: BookOpen },
-    { path: '/cart', label: 'Shopping Cart', icon: ShoppingCart },
     { path: '/enrollments', label: 'My Enrollments', icon: FileText },
+    { path: '/cart', label: 'Shopping Cart', icon: ShoppingCart },
     { path: '/academic/grades', label: 'My Grades', icon: BarChart3 },
     { path: '/academic/transcript', label: 'Transcript', icon: FileText },
     { path: '/planning', label: 'Degree Planning', icon: Target },

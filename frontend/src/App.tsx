@@ -5,7 +5,7 @@ import { ThemeProvider } from './contexts/ThemeContext';
 import { MainLayout } from './components/layout/MainLayout';
 import { Login } from './pages/Login';
 import { Dashboard } from './pages/Dashboard';
-import { CourseList } from './pages/CourseList';
+import { CourseDetails } from './pages/CourseDetails';
 import { MyEnrollments } from './pages/MyEnrollments';
 
 // New Student Pages
@@ -92,11 +92,11 @@ function App() {
 
             {/* Course Management */}
             <Route
-              path="/courses"
+              path="/courses/:courseId"
               element={
                 <ProtectedRoute>
                   <MainLayout>
-                    <CourseList />
+                    <CourseDetails />
                   </MainLayout>
                 </ProtectedRoute>
               }
