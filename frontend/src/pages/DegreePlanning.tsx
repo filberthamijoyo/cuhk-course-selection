@@ -47,13 +47,13 @@ export function DegreePlanning() {
 
   const getCategoryIcon = (category: string) => {
     const icons: Record<string, string> = {
-      'CORE': '📚',
-      'MAJOR': '🎓',
-      'ELECTIVE': '📖',
-      'GENERAL_ED': '🌐',
-      'OTHER': '📝',
+      'CORE': 'Core',
+      'MAJOR': 'Major',
+      'ELECTIVE': 'Elective',
+      'GENERAL_ED': 'General',
+      'OTHER': 'Other',
     };
-    return icons[category] || '📝';
+    return icons[category] || 'Other';
   };
 
   return (
@@ -129,7 +129,7 @@ export function DegreePlanning() {
                       <div key={req.id} className="border border-gray-200 rounded-lg p-4">
                         <div className="flex items-start justify-between mb-3">
                           <div className="flex items-center">
-                            <span className="text-2xl mr-3">{getCategoryIcon(req.category)}</span>
+                            <span className="text-sm font-semibold text-primary mr-3">{getCategoryIcon(req.category)}</span>
                             <div>
                               <h4 className="text-lg font-medium text-gray-900">{req.name}</h4>
                               {req.description && (
@@ -137,8 +137,8 @@ export function DegreePlanning() {
                               )}
                             </div>
                           </div>
-                          <span className={`px-3 py-1 text-xs font-semibold rounded-full ${getStatusColor(req.status)}`}>
-                            {req.status.replace(/_/g, ' ')}
+                          <span className={`px-3 py-1 text-xs font-semibold rounded-full ${getStatusColor(req.status || 'NOT_STARTED')}`}>
+                            {(req.status || 'NOT_STARTED').replace(/_/g, ' ')}
                           </span>
                         </div>
 

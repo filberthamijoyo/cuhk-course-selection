@@ -50,14 +50,14 @@ export function CampusInfo() {
 
   const getCategoryIcon = (category: string) => {
     const icons: Record<string, string> = {
-      'ACADEMIC': '📚',
-      'SOCIAL': '🎉',
-      'CAREER': '💼',
-      'SPORTS': '⚽',
-      'CULTURAL': '🎭',
-      'GENERAL': '📢',
+      'ACADEMIC': '',
+      'SOCIAL': '',
+      'CAREER': '',
+      'SPORTS': '',
+      'CULTURAL': '',
+      'GENERAL': '',
     };
-    return icons[category] || '📢';
+    return icons[category] || '';
   };
 
   const eventCategories = [
@@ -91,7 +91,6 @@ export function CampusInfo() {
                   : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
               }`}
             >
-              <span className="mr-2">📢</span>
               Announcements
             </button>
             <button
@@ -102,7 +101,6 @@ export function CampusInfo() {
                   : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
               }`}
             >
-              <span className="mr-2">📅</span>
               Events
             </button>
           </nav>

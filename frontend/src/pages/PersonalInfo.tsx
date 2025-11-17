@@ -78,10 +78,10 @@ export function PersonalInfo() {
     );
   }
 
-  const tabs: { id: TabType; label: string; icon: string }[] = [
-    { id: 'contact', label: 'Contact Information', icon: '📱' },
-    { id: 'emergency', label: 'Emergency Contact', icon: '🚨' },
-    { id: 'address', label: 'Address', icon: '🏠' },
+  const tabs: { id: TabType; label: string }[] = [
+    { id: 'contact', label: 'Contact Information' },
+    { id: 'emergency', label: 'Emergency Contact' },
+    { id: 'address', label: 'Address' },
   ];
 
   return (

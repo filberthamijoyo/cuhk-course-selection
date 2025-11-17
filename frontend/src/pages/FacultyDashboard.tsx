@@ -23,21 +23,18 @@ export function FacultyDashboard() {
     {
       title: 'Grade Submission',
       description: 'Submit or update student grades',
-      icon: '📝',
       link: '/faculty/grades',
       color: 'bg-blue-50 border-blue-200',
     },
     {
       title: 'Attendance',
       description: 'Mark student attendance',
-      icon: '✅',
       link: '/faculty/attendance',
       color: 'bg-green-50 border-green-200',
     },
     {
       title: 'Course Materials',
       description: 'Upload and manage materials',
-      icon: '📚',
       link: '/faculty/materials',
       color: 'bg-purple-50 border-purple-200',
     },
@@ -62,7 +59,6 @@ export function FacultyDashboard() {
               <div className="mt-2 text-4xl font-bold">{courses?.length || 0}</div>
               <div className="mt-1 text-sm opacity-90">This Semester</div>
             </div>
-            <div className="text-5xl opacity-80">📚</div>
           </div>
         </div>
 
@@ -75,7 +71,6 @@ export function FacultyDashboard() {
               </div>
               <div className="mt-1 text-sm text-gray-500">Across all courses</div>
             </div>
-            <div className="text-4xl">👥</div>
           </div>
         </div>
 
@@ -88,7 +83,6 @@ export function FacultyDashboard() {
               </div>
               <div className="mt-1 text-sm text-gray-500">{user?.faculty?.office || 'N/A'}</div>
             </div>
-            <div className="text-4xl">🕐</div>
           </div>
         </div>
       </div>
@@ -103,12 +97,9 @@ export function FacultyDashboard() {
               to={action.link}
               className={`block ${action.color} border-2 rounded-lg p-6 hover:shadow-lg transition-all duration-200 hover:-translate-y-1`}
             >
-              <div className="flex items-center">
-                <span className="text-4xl mr-4">{action.icon}</span>
-                <div>
-                  <h3 className="text-lg font-semibold text-gray-900">{action.title}</h3>
-                  <p className="mt-1 text-sm text-gray-600">{action.description}</p>
-                </div>
+              <div>
+                <h3 className="text-lg font-semibold text-gray-900">{action.title}</h3>
+                <p className="mt-1 text-sm text-gray-600">{action.description}</p>
               </div>
             </Link>
           ))}
@@ -128,14 +119,11 @@ export function FacultyDashboard() {
                 <div className="p-6">
                   <div className="flex items-start justify-between mb-4">
                     <div className="flex-1">
-                      <div className="flex items-center mb-2">
-                        <span className="text-2xl mr-3">📖</span>
-                        <div>
-                          <h3 className="text-lg font-semibold text-gray-900">
-                            {course.courseCode}
-                          </h3>
-                          <p className="text-sm text-gray-600">{course.courseName}</p>
-                        </div>
+                      <div className="mb-2">
+                        <h3 className="text-lg font-semibold text-gray-900">
+                          {course.courseCode}
+                        </h3>
+                        <p className="text-sm text-gray-600">{course.courseName}</p>
                       </div>
                     </div>
                     <span className="inline-flex items-center px-3 py-1 rounded-full text-xs font-semibold bg-blue-100 text-blue-800">

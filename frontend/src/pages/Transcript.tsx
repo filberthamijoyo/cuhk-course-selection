@@ -10,9 +10,33 @@ export function Transcript() {
     queryFn: () => academicAPI.getTranscript().then(res => res.data.data),
   });
 
-  const handleDownloadPDF = () => {
-    // In a real implementation, this would download the PDF
-    alert('PDF download functionality would be implemented here. The backend endpoint is ready at /api/academic/transcript/pdf');
+  const handleDownloadPDF = async () => {
+    try {
+      const token = localStorage.getItem('token');
+      const response = await fetch('http://localhost:5000/api/academic/transcript/pdf', {
+        method: 'GET',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+        },
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to download PDF');
+      }
+
+      const blob = await response.blob();
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `transcript_${user?.userIdentifier}_${new Date().toISOString().split('T')[0]}.pdf`;
+      document.body.appendChild(a);
+      a.click();
+      window.URL.revokeObjectURL(url);
+      document.body.removeChild(a);
+    } catch (error) {
+      console.error('Error downloading PDF:', error);
+      alert('Failed to download PDF. Please try again.');
+    }
   };
 
   if (isLoading) {
