@@ -11,8 +11,15 @@ import {
   AlertCircle,
   Star,
   Clock,
-  Users
+  Users,
+  Edit3,
+  RotateCcw,
+  Mail
 } from 'lucide-react';
+import AddDropCourse from '../components/AddDropCourse';
+import MajorChangeRequest from '../components/MajorChangeRequest';
+import CourseEvaluationList from '../components/CourseEvaluationList';
+import { Applications } from './Applications';
 
 interface Enrollment {
   id: number;
@@ -51,7 +58,7 @@ export function MyEnrollments() {
   const { user } = useAuth();
   const queryClient = useQueryClient();
   const navigate = useNavigate();
-  const [activeTab, setActiveTab] = useState<'enrollments' | 'search'>('enrollments');
+  const [activeTab, setActiveTab] = useState<'enrollments' | 'search' | 'add-drop' | 'major-change' | 'evaluations' | 'applications'>('enrollments');
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedDepartment, setSelectedDepartment] = useState('');
   const [expandedDepartments, setExpandedDepartments] = useState<Set<string>>(new Set());
@@ -233,26 +240,72 @@ export function MyEnrollments() {
 
         {/* Tabs */}
         <div className="mb-6 border-b border-gray-200 dark:border-gray-700">
-          <nav className="-mb-px flex space-x-8">
+          <nav className="-mb-px flex space-x-4 overflow-x-auto">
             <button
               onClick={() => setActiveTab('enrollments')}
-              className={`py-4 px-1 border-b-2 font-medium text-sm transition-colors ${
+              className={`py-4 px-3 border-b-2 font-medium text-sm whitespace-nowrap transition-colors flex items-center gap-2 ${
                 activeTab === 'enrollments'
                   ? 'border-primary text-primary'
                   : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300 dark:text-gray-400 dark:hover:text-gray-300'
               }`}
             >
+              <BookOpen className="w-4 h-4" />
               My Courses
             </button>
             <button
               onClick={() => setActiveTab('search')}
-              className={`py-4 px-1 border-b-2 font-medium text-sm transition-colors ${
+              className={`py-4 px-3 border-b-2 font-medium text-sm whitespace-nowrap transition-colors flex items-center gap-2 ${
                 activeTab === 'search'
                   ? 'border-primary text-primary'
                   : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300 dark:text-gray-400 dark:hover:text-gray-300'
               }`}
             >
+              <Search className="w-4 h-4" />
               Course Search
+            </button>
+            <button
+              onClick={() => setActiveTab('add-drop')}
+              className={`py-4 px-3 border-b-2 font-medium text-sm whitespace-nowrap transition-colors flex items-center gap-2 ${
+                activeTab === 'add-drop'
+                  ? 'border-primary text-primary'
+                  : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300 dark:text-gray-400 dark:hover:text-gray-300'
+              }`}
+            >
+              <Edit3 className="w-4 h-4" />
+              Add/Drop
+            </button>
+            <button
+              onClick={() => setActiveTab('major-change')}
+              className={`py-4 px-3 border-b-2 font-medium text-sm whitespace-nowrap transition-colors flex items-center gap-2 ${
+                activeTab === 'major-change'
+                  ? 'border-primary text-primary'
+                  : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300 dark:text-gray-400 dark:hover:text-gray-300'
+              }`}
+            >
+              <RotateCcw className="w-4 h-4" />
+              Major Change
+            </button>
+            <button
+              onClick={() => setActiveTab('evaluations')}
+              className={`py-4 px-3 border-b-2 font-medium text-sm whitespace-nowrap transition-colors flex items-center gap-2 ${
+                activeTab === 'evaluations'
+                  ? 'border-primary text-primary'
+                  : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300 dark:text-gray-400 dark:hover:text-gray-300'
+              }`}
+            >
+              <Star className="w-4 h-4" />
+              Evaluations
+            </button>
+            <button
+              onClick={() => setActiveTab('applications')}
+              className={`py-4 px-3 border-b-2 font-medium text-sm whitespace-nowrap transition-colors flex items-center gap-2 ${
+                activeTab === 'applications'
+                  ? 'border-primary text-primary'
+                  : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300 dark:text-gray-400 dark:hover:text-gray-300'
+              }`}
+            >
+              <Mail className="w-4 h-4" />
+              Applications
             </button>
           </nav>
         </div>
@@ -554,6 +607,91 @@ export function MyEnrollments() {
                 </p>
               </div>
             )}
+          </div>
+        )}
+
+        {/* Add/Drop Tab */}
+        {activeTab === 'add-drop' && user && (
+          <div className="space-y-6">
+            <div className="bg-blue-50 dark:bg-blue-950/30 border-l-4 border-blue-500 p-4 rounded-lg">
+              <div className="flex items-start">
+                <AlertCircle className="w-5 h-5 text-blue-600 dark:text-blue-400 mr-3 mt-0.5" />
+                <div className="flex-1">
+                  <h3 className="text-sm font-semibold text-blue-800 dark:text-blue-300">
+                    Important Information
+                  </h3>
+                  <p className="text-sm text-blue-700 dark:text-blue-400 mt-1">
+                    Submit requests to add or drop courses for the current term. Check add/drop deadlines in the Academic Calendar.
+                  </p>
+                </div>
+              </div>
+            </div>
+            <AddDropCourse currentUser={user} />
+          </div>
+        )}
+
+        {/* Major Change Tab */}
+        {activeTab === 'major-change' && user && (
+          <div className="space-y-6">
+            <div className="bg-purple-50 dark:bg-purple-950/30 border-l-4 border-purple-500 p-4 rounded-lg">
+              <div className="flex items-start">
+                <AlertCircle className="w-5 h-5 text-purple-600 dark:text-purple-400 mr-3 mt-0.5" />
+                <div className="flex-1">
+                  <h3 className="text-sm font-semibold text-purple-800 dark:text-purple-300">
+                    Eligibility Requirements
+                  </h3>
+                  <div className="text-sm text-purple-700 dark:text-purple-400 mt-1">
+                    <ul className="list-disc list-inside space-y-1">
+                      <li>Minimum GPA of 3.0 OR at least 6 units completed</li>
+                      <li>Supporting documents may be required for certain majors</li>
+                      <li>Requests are typically processed within 2-4 weeks</li>
+                    </ul>
+                  </div>
+                </div>
+              </div>
+            </div>
+            <MajorChangeRequest currentUser={user} />
+          </div>
+        )}
+
+        {/* Evaluations Tab */}
+        {activeTab === 'evaluations' && user && (
+          <div className="space-y-6">
+            <div className="bg-yellow-50 dark:bg-yellow-950/30 border-l-4 border-yellow-500 p-4 rounded-lg">
+              <div className="flex items-start">
+                <Star className="w-5 h-5 text-yellow-600 dark:text-yellow-400 mr-3 mt-0.5" />
+                <div className="flex-1">
+                  <h3 className="text-sm font-semibold text-yellow-800 dark:text-yellow-300">
+                    Why Evaluate?
+                  </h3>
+                  <p className="text-sm text-yellow-700 dark:text-yellow-400 mt-1">
+                    Course evaluations help instructors improve their teaching methods and course content.
+                    Your honest feedback is valuable and can be submitted anonymously.
+                  </p>
+                </div>
+              </div>
+            </div>
+            <CourseEvaluationList studentId={user.id} />
+          </div>
+        )}
+
+        {/* Applications Tab */}
+        {activeTab === 'applications' && user && (
+          <div className="space-y-6">
+            <div className="bg-indigo-50 dark:bg-indigo-950/30 border-l-4 border-indigo-500 p-4 rounded-lg">
+              <div className="flex items-start">
+                <Mail className="w-5 h-5 text-indigo-600 dark:text-indigo-400 mr-3 mt-0.5" />
+                <div className="flex-1">
+                  <h3 className="text-sm font-semibold text-indigo-800 dark:text-indigo-300">
+                    Submit Academic Applications
+                  </h3>
+                  <p className="text-sm text-indigo-700 dark:text-indigo-400 mt-1">
+                    Track and manage your academic applications including leave of absence, readmission, and other requests.
+                  </p>
+                </div>
+              </div>
+            </div>
+            <Applications />
           </div>
         )}
       </div>

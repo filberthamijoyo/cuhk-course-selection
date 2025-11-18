@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { ChevronLeft, ChevronRight } from 'lucide-react';
 import { academicCalendarService } from '../services/academicCalendarService';
 import type { AcademicEvent, AddDropStatus } from '../types';
 
@@ -11,6 +12,8 @@ const AcademicCalendar: React.FC = () => {
   const [selectedTerm, setSelectedTerm] = useState<string>('');
   const [selectedYear, setSelectedYear] = useState<number>(new Date().getFullYear());
   const [viewMode, setViewMode] = useState<'calendar' | 'list'>('list');
+  const [currentMonth, setCurrentMonth] = useState(new Date().getMonth());
+  const [currentYear, setCurrentYear] = useState(new Date().getFullYear());
 
   useEffect(() => {
     loadData();
@@ -60,6 +63,73 @@ const AcademicCalendar: React.FC = () => {
     const diffTime = Math.abs(end.getTime() - start.getTime());
     return Math.ceil(diffTime / (1000 * 60 * 60 * 24));
   };
+
+  const getDaysInMonth = (month: number, year: number): number => {
+    return new Date(year, month + 1, 0).getDate();
+  };
+
+  const getFirstDayOfMonth = (month: number, year: number): number => {
+    return new Date(year, month, 1).getDay();
+  };
+
+  const generateCalendarDays = () => {
+    const daysInMonth = getDaysInMonth(currentMonth, currentYear);
+    const firstDay = getFirstDayOfMonth(currentMonth, currentYear);
+    const days: (number | null)[] = [];
+
+    // Add empty cells for days before the first day of the month
+    for (let i = 0; i < firstDay; i++) {
+      days.push(null);
+    }
+
+    // Add all days of the month
+    for (let day = 1; day <= daysInMonth; day++) {
+      days.push(day);
+    }
+
+    return days;
+  };
+
+  const getEventsForDate = (day: number): AcademicEvent[] => {
+    return events.filter((event) => {
+      const eventStart = new Date(event.start_date);
+      const eventEnd = event.end_date ? new Date(event.end_date) : eventStart;
+      const checkDate = new Date(currentYear, currentMonth, day);
+
+      return checkDate >= new Date(eventStart.getFullYear(), eventStart.getMonth(), eventStart.getDate()) &&
+             checkDate <= new Date(eventEnd.getFullYear(), eventEnd.getMonth(), eventEnd.getDate());
+    });
+  };
+
+  const navigateMonth = (direction: 'prev' | 'next') => {
+    if (direction === 'prev') {
+      if (currentMonth === 0) {
+        setCurrentMonth(11);
+        setCurrentYear(currentYear - 1);
+      } else {
+        setCurrentMonth(currentMonth - 1);
+      }
+    } else {
+      if (currentMonth === 11) {
+        setCurrentMonth(0);
+        setCurrentYear(currentYear + 1);
+      } else {
+        setCurrentMonth(currentMonth + 1);
+      }
+    }
+  };
+
+  const isToday = (day: number): boolean => {
+    const today = new Date();
+    return day === today.getDate() &&
+           currentMonth === today.getMonth() &&
+           currentYear === today.getFullYear();
+  };
+
+  const monthNames = ['January', 'February', 'March', 'April', 'May', 'June',
+    'July', 'August', 'September', 'October', 'November', 'December'];
+
+  const dayNames = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
 
   if (loading) {
     return (
@@ -239,12 +309,92 @@ const AcademicCalendar: React.FC = () => {
                 )}
               </div>
             ) : (
-              <div className="text-center py-12 text-gray-500">
-                <svg className="mx-auto h-12 w-12 text-gray-400 mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
-                </svg>
-                <p>Calendar grid view coming soon!</p>
-                <p className="text-sm mt-2">Use List view to see all events</p>
+              <div>
+                {/* Month Navigation */}
+                <div className="flex items-center justify-between mb-6">
+                  <button
+                    onClick={() => navigateMonth('prev')}
+                    className="p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors"
+                    aria-label="Previous month"
+                  >
+                    <ChevronLeft className="h-5 w-5 text-gray-600 dark:text-gray-400" />
+                  </button>
+                  <h3 className="text-xl font-bold text-gray-900 dark:text-white">
+                    {monthNames[currentMonth]} {currentYear}
+                  </h3>
+                  <button
+                    onClick={() => navigateMonth('next')}
+                    className="p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors"
+                    aria-label="Next month"
+                  >
+                    <ChevronRight className="h-5 w-5 text-gray-600 dark:text-gray-400" />
+                  </button>
+                </div>
+
+                {/* Calendar Grid */}
+                <div className="border border-gray-200 dark:border-gray-700 rounded-lg overflow-hidden">
+                  {/* Day Headers */}
+                  <div className="grid grid-cols-7 bg-gray-50 dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700">
+                    {dayNames.map((day) => (
+                      <div
+                        key={day}
+                        className="py-2 text-center text-xs font-semibold text-gray-700 dark:text-gray-300 uppercase"
+                      >
+                        {day}
+                      </div>
+                    ))}
+                  </div>
+
+                  {/* Calendar Days */}
+                  <div className="grid grid-cols-7 auto-rows-fr">
+                    {generateCalendarDays().map((day, index) => {
+                      const dayEvents = day ? getEventsForDate(day) : [];
+                      return (
+                        <div
+                          key={index}
+                          className={`min-h-[100px] p-2 border-r border-b border-gray-200 dark:border-gray-700 ${
+                            day === null ? 'bg-gray-50 dark:bg-gray-800/50' : 'bg-white dark:bg-gray-800'
+                          } ${isToday(day || 0) ? 'ring-2 ring-primary ring-inset' : ''}`}
+                        >
+                          {day !== null && (
+                            <>
+                              <div className={`text-sm font-medium mb-1 ${
+                                isToday(day) ? 'text-primary font-bold' : 'text-gray-700 dark:text-gray-300'
+                              }`}>
+                                {day}
+                              </div>
+                              <div className="space-y-1 overflow-y-auto max-h-[70px]">
+                                {dayEvents.map((event, eventIndex) => (
+                                  <div
+                                    key={eventIndex}
+                                    className={`text-xs px-1.5 py-0.5 rounded truncate ${getEventTypeColor(event.event_type)} cursor-pointer hover:opacity-80`}
+                                    title={`${event.name}\n${event.description || ''}`}
+                                  >
+                                    {event.name}
+                                  </div>
+                                ))}
+                              </div>
+                            </>
+                          )}
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+
+                {/* Today Button */}
+                <div className="mt-4 flex justify-center">
+                  <button
+                    onClick={() => {
+                      const today = new Date();
+                      setCurrentMonth(today.getMonth());
+                      setCurrentYear(today.getFullYear());
+                    }}
+                    className="px-4 py-2 text-sm bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors"
+                  >
+                    Today
+                  </button>
+                </div>
               </div>
             )}
           </div>
