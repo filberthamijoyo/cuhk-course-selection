@@ -4,6 +4,10 @@ import prisma from '../config/prisma';
 import { AppError } from '../utils/errors';
 import { EnrollmentStatus } from '@prisma/client';
 
+type GraduationStatus = {
+  status: 'ELIGIBLE' | 'NOT_ELIGIBLE' | 'ON_TRACK' | 'AT_RISK';
+};
+
 /**
  * Get degree audit for the authenticated user
  */
@@ -236,6 +240,189 @@ export async function getProgress(req: AuthRequest, res: Response) {
         message: 'Failed to fetch progress',
       });
     }
+  }
+}
+
+/**
+ * Evaluate graduation eligibility for the authenticated user
+ */
+export async function getGraduationEligibility(req: AuthRequest, res: Response) {
+  try {
+    const userId = req.user!.id;
+
+    const student = await prisma.students.findUnique({
+      where: { user_id: userId },
+      include: {
+        majors: {
+          include: {
+            requirements: true,
+          },
+        },
+        users_students_user_idTousers: {
+          include: {
+            enrollments: {
+              where: {
+                status: EnrollmentStatus.CONFIRMED,
+              },
+              include: {
+                courses: true,
+                grades: true,
+              },
+            },
+          },
+        },
+      },
+    });
+
+    if (!student || !student.majors) {
+      return res.json({
+        success: true,
+        data: {
+          eligible: false,
+          status: 'NOT_ELIGIBLE',
+          checklist: {
+            coreComplete: false,
+            majorRequiredComplete: false,
+            majorElectiveComplete: false,
+            freeElectiveComplete: false,
+            totalCreditsComplete: false,
+            gpaRequirement: false,
+          },
+          missing: {
+            coreCredits: 0,
+            majorRequiredCredits: 0,
+            majorElectiveCredits: 0,
+            freeElectiveCredits: 0,
+            totalCredits: 120,
+            gpaDeficit: 2,
+          },
+          summary: {
+            totalRequired: 120,
+            totalEarned: 0,
+            currentGPA: 0,
+            minimumGPA: 2,
+          },
+          estimatedGraduation: student?.expected_grad ?? 'TBD',
+          actionItems: ['Declare a major to receive a full graduation audit'],
+        },
+      });
+    }
+
+    const enrollmentsWithPublishedGrades = student.users_students_user_idTousers.enrollments.filter(
+      e => e.grades?.status === 'PUBLISHED'
+    );
+
+    const completedCourseCodes = new Set(
+      enrollmentsWithPublishedGrades.map(e => e.courses.course_code)
+    );
+    const totalCreditsEarned = enrollmentsWithPublishedGrades.reduce((sum, e) => sum + (e.courses.credits || 0), 0);
+
+    let totalQualityPoints = 0;
+    let totalCreditsForGPA = 0;
+    enrollmentsWithPublishedGrades.forEach(enrollment => {
+      const credits = enrollment.courses.credits || 0;
+      if (enrollment.grades?.grade_points !== null && enrollment.grades?.grade_points !== undefined) {
+        totalQualityPoints += enrollment.grades.grade_points * credits;
+        totalCreditsForGPA += credits;
+      }
+    });
+    const currentGPA = totalCreditsForGPA > 0 ? totalQualityPoints / totalCreditsForGPA : 0;
+    const minimumGPA = student.majors.minimum_gpa || 2.0;
+
+    const bucketTemplate = { required: 0, earned: 0 };
+    const buckets = {
+      core: { ...bucketTemplate },
+      majorRequired: { ...bucketTemplate },
+      majorElective: { ...bucketTemplate },
+      freeElective: { ...bucketTemplate },
+    };
+
+    student.majors.requirements.forEach(req => {
+      const category = (req.category || '').toLowerCase();
+      let bucketKey: keyof typeof buckets = 'majorRequired';
+      if (category.includes('core')) bucketKey = 'core';
+      else if (category.includes('elective') && category.includes('major')) bucketKey = 'majorElective';
+      else if (category.includes('elective')) bucketKey = 'freeElective';
+
+      const requiredCredits = req.credits || 0;
+      buckets[bucketKey].required += requiredCredits;
+
+      const reqCourses = (req.courses as string[]) || [];
+      const completedForRequirement = reqCourses.filter(code => completedCourseCodes.has(code));
+      const earnedCredits = Math.min(completedForRequirement.length * 3, requiredCredits);
+      buckets[bucketKey].earned += earnedCredits;
+    });
+
+    const checklist = {
+      coreComplete: buckets.core.earned >= buckets.core.required && buckets.core.required > 0,
+      majorRequiredComplete:
+        buckets.majorRequired.earned >= buckets.majorRequired.required && buckets.majorRequired.required > 0,
+      majorElectiveComplete:
+        buckets.majorElective.earned >= buckets.majorElective.required && buckets.majorElective.required > 0,
+      freeElectiveComplete:
+        buckets.freeElective.earned >= buckets.freeElective.required && buckets.freeElective.required > 0,
+      totalCreditsComplete: totalCreditsEarned >= (student.majors.total_credits || 120),
+      gpaRequirement: currentGPA >= minimumGPA,
+    };
+
+    const missing = {
+      coreCredits: Math.max(buckets.core.required - buckets.core.earned, 0),
+      majorRequiredCredits: Math.max(buckets.majorRequired.required - buckets.majorRequired.earned, 0),
+      majorElectiveCredits: Math.max(buckets.majorElective.required - buckets.majorElective.earned, 0),
+      freeElectiveCredits: Math.max(buckets.freeElective.required - buckets.freeElective.earned, 0),
+      totalCredits: Math.max((student.majors.total_credits || 120) - totalCreditsEarned, 0),
+      gpaDeficit: Math.max(minimumGPA - currentGPA, 0),
+    };
+
+    const eligible = Object.values(checklist).every(Boolean);
+    let status: GraduationStatus['status'] = 'NOT_ELIGIBLE';
+    if (eligible) status = 'ELIGIBLE';
+    else if (checklist.totalCreditsComplete && checklist.gpaRequirement) status = 'ON_TRACK';
+    else if (totalCreditsEarned / (student.majors.total_credits || 120) >= 0.75) status = 'AT_RISK';
+
+    const actionItems: string[] = [];
+    if (!checklist.coreComplete && missing.coreCredits > 0) {
+      actionItems.push(`Complete ${missing.coreCredits} additional core credits`);
+    }
+    if (!checklist.majorRequiredComplete && missing.majorRequiredCredits > 0) {
+      actionItems.push(`Complete ${missing.majorRequiredCredits} remaining major-required credits`);
+    }
+    if (!checklist.majorElectiveComplete && missing.majorElectiveCredits > 0) {
+      actionItems.push(`Add ${missing.majorElectiveCredits} major elective credits to your plan`);
+    }
+    if (!checklist.freeElectiveComplete && missing.freeElectiveCredits > 0) {
+      actionItems.push(`Fulfill ${missing.freeElectiveCredits} free elective credits`);
+    }
+    if (!checklist.totalCreditsComplete && missing.totalCredits > 0) {
+      actionItems.push(`Earn ${missing.totalCredits} more total credits`);
+    }
+    if (!checklist.gpaRequirement && missing.gpaDeficit > 0) {
+      actionItems.push(`Improve GPA by ${missing.gpaDeficit.toFixed(2)} to reach ${minimumGPA.toFixed(2)}`);
+    }
+
+    res.json({
+      success: true,
+      data: {
+        eligible,
+        status,
+        checklist,
+        missing,
+        summary: {
+          totalRequired: student.majors.total_credits || 120,
+          totalEarned: totalCreditsEarned,
+          currentGPA: Math.round(currentGPA * 100) / 100,
+          minimumGPA,
+        },
+        estimatedGraduation: student.expected_grad || 'TBD',
+        actionItems,
+      },
+    });
+  } catch (error) {
+    console.error('Get graduation eligibility error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to evaluate graduation eligibility',
+    });
   }
 }
 

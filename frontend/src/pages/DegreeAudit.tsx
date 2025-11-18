@@ -104,13 +104,15 @@ export function DegreeAudit() {
 
       {/* Requirements Breakdown */}
       <div className="space-y-6">
-        {requirements.map((req, index) => (
-          <div key={index} className="bg-card border border-border rounded-lg shadow overflow-hidden">
+        {requirements.map((req, index) => {
+          const status = req.status || 'NOT_STARTED';
+          return (
+            <div key={index} className="bg-card border border-border rounded-lg shadow overflow-hidden">
             {/* Requirement Header */}
             <div className="bg-muted/50 px-6 py-4 border-b border-border">
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-3">
-                  {getStatusIcon(req.status)}
+                  {getStatusIcon(status)}
                   <div>
                     <h3 className="text-lg font-semibold text-foreground">{req.category}</h3>
                     {req.subcategory && (
@@ -119,8 +121,8 @@ export function DegreeAudit() {
                   </div>
                 </div>
                 <div className="flex items-center gap-4">
-                  <span className={`px-3 py-1 rounded-full text-xs font-semibold ${getStatusBadge(req.status)}`}>
-                    {req.status.replace('_', ' ')}
+                  <span className={`px-3 py-1 rounded-full text-xs font-semibold ${getStatusBadge(status)}`}>
+                    {status.replace('_', ' ')}
                   </span>
                   <div className="text-right">
                     <div className="text-2xl font-bold text-foreground">
@@ -136,9 +138,9 @@ export function DegreeAudit() {
                 <div className="w-full bg-muted rounded-full h-2">
                   <div
                     className={`h-2 rounded-full transition-all duration-500 ${
-                      req.status === 'COMPLETED'
+                      status === 'COMPLETED'
                         ? 'bg-green-500'
-                        : req.status === 'IN_PROGRESS'
+                        : status === 'IN_PROGRESS'
                         ? 'bg-yellow-500'
                         : 'bg-red-500'
                     }`}
@@ -226,8 +228,9 @@ export function DegreeAudit() {
                 </div>
               )}
             </div>
-          </div>
-        ))}
+            </div>
+          );
+        })}
       </div>
 
       {/* Summary */}
