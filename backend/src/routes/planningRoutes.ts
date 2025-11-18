@@ -11,6 +11,7 @@ router.use(authenticate);
 router.get('/degree-audit', planningController.getDegreeAudit);
 router.get('/requirements', planningController.getRequirements);
 router.get('/progress', planningController.getProgress);
+router.get('/graduation-eligibility', planningController.getGraduationEligibility);
 
 // Advisor routes
 router.get('/advisor', planningController.getAdvisor);

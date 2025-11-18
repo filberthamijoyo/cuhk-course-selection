@@ -78,18 +78,18 @@ export function PersonalInfo() {
     );
   }
 
-  const tabs: { id: TabType; label: string; icon: string }[] = [
-    { id: 'contact', label: 'Contact Information', icon: '📱' },
-    { id: 'emergency', label: 'Emergency Contact', icon: '🚨' },
-    { id: 'address', label: 'Address', icon: '🏠' },
+  const tabs: { id: TabType; label: string }[] = [
+    { id: 'contact', label: 'Contact Information' },
+    { id: 'emergency', label: 'Emergency Contact' },
+    { id: 'address', label: 'Address' },
   ];
 
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
       {/* Header */}
       <div className="mb-8">
-        <h1 className="text-3xl font-bold text-gray-900">Personal Information</h1>
-        <p className="mt-2 text-gray-600">Manage your contact details and emergency contacts</p>
+        <h1 className="text-3xl font-bold text-foreground">Personal Information</h1>
+        <p className="mt-2 text-muted-foreground">Manage your contact details and emergency contacts</p>
       </div>
 
       {/* Success Message */}
@@ -109,8 +109,8 @@ export function PersonalInfo() {
       )}
 
       {/* Tabs */}
-      <div className="bg-white rounded-lg shadow">
-        <div className="border-b border-gray-200">
+      <div className="bg-card rounded-lg shadow">
+        <div className="border-b border-border">
           <nav className="-mb-px flex">
             {tabs.map((tab) => (
               <button
@@ -123,7 +123,7 @@ export function PersonalInfo() {
                 className={`flex items-center py-4 px-6 text-center text-sm font-medium border-b-2 ${
                   activeTab === tab.id
                     ? 'border-blue-500 text-blue-600'
-                    : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+                    : 'border-transparent text-muted-foreground hover:text-foreground hover:border-border'
                 }`}
               >
                 <span className="mr-2">{tab.icon}</span>
@@ -138,24 +138,24 @@ export function PersonalInfo() {
           {activeTab === 'contact' && (
             <div className="space-y-6">
               <div>
-                <h3 className="text-lg font-medium text-gray-900 mb-4">Contact Information</h3>
+                <h3 className="text-lg font-medium text-foreground mb-4">Contact Information</h3>
 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                    <label className="block text-sm font-medium text-foreground mb-2">
                       Full Name
                     </label>
                     <input
                       type="text"
                       value={formData.user?.fullName || ''}
                       disabled
-                      className="w-full px-3 py-2 border border-gray-300 rounded-md bg-gray-50 text-gray-500"
+                      className="w-full px-3 py-2 border border-border rounded-md bg-muted/50 text-muted-foreground"
                     />
-                    <p className="mt-1 text-xs text-gray-500">Contact registrar to change</p>
+                    <p className="mt-1 text-xs text-muted-foreground">Contact registrar to change</p>
                   </div>
 
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                    <label className="block text-sm font-medium text-foreground mb-2">
                       Preferred Name
                     </label>
                     <input
@@ -163,7 +163,7 @@ export function PersonalInfo() {
                       value={formData.preferredName || ''}
                       onChange={(e) => handleChange('preferredName', e.target.value)}
                       disabled={!isEditing}
-                      className={`w-full px-3 py-2 border border-gray-300 rounded-md ${
+                      className={`w-full px-3 py-2 border border-border rounded-md ${
                         isEditing ? 'bg-white' : 'bg-gray-50'
                       }`}
                       placeholder="Enter preferred name"
@@ -171,20 +171,20 @@ export function PersonalInfo() {
                   </div>
 
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                    <label className="block text-sm font-medium text-foreground mb-2">
                       University Email
                     </label>
                     <input
                       type="email"
                       value={formData.user?.email || ''}
                       disabled
-                      className="w-full px-3 py-2 border border-gray-300 rounded-md bg-gray-50 text-gray-500"
+                      className="w-full px-3 py-2 border border-border rounded-md bg-muted/50 text-muted-foreground"
                     />
-                    <p className="mt-1 text-xs text-gray-500">Primary email cannot be changed</p>
+                    <p className="mt-1 text-xs text-muted-foreground">Primary email cannot be changed</p>
                   </div>
 
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                    <label className="block text-sm font-medium text-foreground mb-2">
                       Alternate Email
                     </label>
                     <input
@@ -192,7 +192,7 @@ export function PersonalInfo() {
                       value={formData.alternateEmail || ''}
                       onChange={(e) => handleChange('alternateEmail', e.target.value)}
                       disabled={!isEditing}
-                      className={`w-full px-3 py-2 border border-gray-300 rounded-md ${
+                      className={`w-full px-3 py-2 border border-border rounded-md ${
                         isEditing ? 'bg-white' : 'bg-gray-50'
                       }`}
                       placeholder="personal@example.com"
@@ -200,7 +200,7 @@ export function PersonalInfo() {
                   </div>
 
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                    <label className="block text-sm font-medium text-foreground mb-2">
                       Phone Number
                     </label>
                     <input
@@ -208,7 +208,7 @@ export function PersonalInfo() {
                       value={formData.phone || ''}
                       onChange={(e) => handleChange('phone', e.target.value)}
                       disabled={!isEditing}
-                      className={`w-full px-3 py-2 border border-gray-300 rounded-md ${
+                      className={`w-full px-3 py-2 border border-border rounded-md ${
                         isEditing ? 'bg-white' : 'bg-gray-50'
                       }`}
                       placeholder="+86 123-4567-8900"
@@ -216,42 +216,42 @@ export function PersonalInfo() {
                   </div>
 
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                    <label className="block text-sm font-medium text-foreground mb-2">
                       Date of Birth
                     </label>
                     <input
                       type="date"
                       value={formData.dateOfBirth ? new Date(formData.dateOfBirth).toISOString().split('T')[0] : ''}
                       disabled
-                      className="w-full px-3 py-2 border border-gray-300 rounded-md bg-gray-50 text-gray-500"
+                      className="w-full px-3 py-2 border border-border rounded-md bg-muted/50 text-muted-foreground"
                     />
-                    <p className="mt-1 text-xs text-gray-500">Contact registrar to change</p>
+                    <p className="mt-1 text-xs text-muted-foreground">Contact registrar to change</p>
                   </div>
 
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                    <label className="block text-sm font-medium text-foreground mb-2">
                       Gender
                     </label>
                     <input
                       type="text"
                       value={formData.gender || ''}
                       disabled
-                      className="w-full px-3 py-2 border border-gray-300 rounded-md bg-gray-50 text-gray-500"
+                      className="w-full px-3 py-2 border border-border rounded-md bg-muted/50 text-muted-foreground"
                     />
-                    <p className="mt-1 text-xs text-gray-500">Contact registrar to change</p>
+                    <p className="mt-1 text-xs text-muted-foreground">Contact registrar to change</p>
                   </div>
 
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                    <label className="block text-sm font-medium text-foreground mb-2">
                       Nationality
                     </label>
                     <input
                       type="text"
                       value={formData.nationality || ''}
                       disabled
-                      className="w-full px-3 py-2 border border-gray-300 rounded-md bg-gray-50 text-gray-500"
+                      className="w-full px-3 py-2 border border-border rounded-md bg-muted/50 text-muted-foreground"
                     />
-                    <p className="mt-1 text-xs text-gray-500">Contact registrar to change</p>
+                    <p className="mt-1 text-xs text-muted-foreground">Contact registrar to change</p>
                   </div>
                 </div>
               </div>
@@ -262,11 +262,11 @@ export function PersonalInfo() {
           {activeTab === 'emergency' && (
             <div className="space-y-6">
               <div>
-                <h3 className="text-lg font-medium text-gray-900 mb-4">Emergency Contact</h3>
+                <h3 className="text-lg font-medium text-foreground mb-4">Emergency Contact</h3>
 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                    <label className="block text-sm font-medium text-foreground mb-2">
                       Contact Name <span className="text-red-500">*</span>
                     </label>
                     <input
@@ -274,7 +274,7 @@ export function PersonalInfo() {
                       value={formData.emergencyName || ''}
                       onChange={(e) => handleChange('emergencyName', e.target.value)}
                       disabled={!isEditing}
-                      className={`w-full px-3 py-2 border border-gray-300 rounded-md ${
+                      className={`w-full px-3 py-2 border border-border rounded-md ${
                         isEditing ? 'bg-white' : 'bg-gray-50'
                       }`}
                       placeholder="Full name"
@@ -283,7 +283,7 @@ export function PersonalInfo() {
                   </div>
 
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                    <label className="block text-sm font-medium text-foreground mb-2">
                       Relationship <span className="text-red-500">*</span>
                     </label>
                     <input
@@ -291,7 +291,7 @@ export function PersonalInfo() {
                       value={formData.emergencyRelation || ''}
                       onChange={(e) => handleChange('emergencyRelation', e.target.value)}
                       disabled={!isEditing}
-                      className={`w-full px-3 py-2 border border-gray-300 rounded-md ${
+                      className={`w-full px-3 py-2 border border-border rounded-md ${
                         isEditing ? 'bg-white' : 'bg-gray-50'
                       }`}
                       placeholder="Mother, Father, Spouse, etc."
@@ -300,7 +300,7 @@ export function PersonalInfo() {
                   </div>
 
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                    <label className="block text-sm font-medium text-foreground mb-2">
                       Phone Number <span className="text-red-500">*</span>
                     </label>
                     <input
@@ -308,7 +308,7 @@ export function PersonalInfo() {
                       value={formData.emergencyPhone || ''}
                       onChange={(e) => handleChange('emergencyPhone', e.target.value)}
                       disabled={!isEditing}
-                      className={`w-full px-3 py-2 border border-gray-300 rounded-md ${
+                      className={`w-full px-3 py-2 border border-border rounded-md ${
                         isEditing ? 'bg-white' : 'bg-gray-50'
                       }`}
                       placeholder="+86 123-4567-8900"
@@ -317,7 +317,7 @@ export function PersonalInfo() {
                   </div>
 
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                    <label className="block text-sm font-medium text-foreground mb-2">
                       Email Address
                     </label>
                     <input
@@ -325,7 +325,7 @@ export function PersonalInfo() {
                       value={formData.emergencyEmail || ''}
                       onChange={(e) => handleChange('emergencyEmail', e.target.value)}
                       disabled={!isEditing}
-                      className={`w-full px-3 py-2 border border-gray-300 rounded-md ${
+                      className={`w-full px-3 py-2 border border-border rounded-md ${
                         isEditing ? 'bg-white' : 'bg-gray-50'
                       }`}
                       placeholder="emergency@example.com"
@@ -355,7 +355,7 @@ export function PersonalInfo() {
           {activeTab === 'address' && (
             <div className="space-y-6">
               <div>
-                <h3 className="text-lg font-medium text-gray-900 mb-4">Address Information</h3>
+                <h3 className="text-lg font-medium text-foreground mb-4">Address Information</h3>
 
                 <div className="space-y-6">
                   {/* Permanent Address */}
@@ -363,7 +363,7 @@ export function PersonalInfo() {
                     <h4 className="text-md font-medium text-gray-800 mb-3">Permanent Address</h4>
                     <div className="grid grid-cols-1 gap-4">
                       <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-2">
+                        <label className="block text-sm font-medium text-foreground mb-2">
                           Street Address
                         </label>
                         <textarea
@@ -371,7 +371,7 @@ export function PersonalInfo() {
                           onChange={(e) => handleChange('permanentAddress', e.target.value)}
                           disabled={!isEditing}
                           rows={2}
-                          className={`w-full px-3 py-2 border border-gray-300 rounded-md ${
+                          className={`w-full px-3 py-2 border border-border rounded-md ${
                             isEditing ? 'bg-white' : 'bg-gray-50'
                           }`}
                           placeholder="Enter full address"
@@ -387,7 +387,7 @@ export function PersonalInfo() {
                       <label className="inline-flex items-center">
                         <input
                           type="checkbox"
-                          className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                          className="rounded border-border text-blue-600 dark:text-blue-400 focus:ring-blue-500"
                           checked={formData.mailingAddress === formData.permanentAddress}
                           onChange={(e) => {
                             if (e.target.checked) {
@@ -396,12 +396,12 @@ export function PersonalInfo() {
                           }}
                           disabled={!isEditing}
                         />
-                        <span className="ml-2 text-sm text-gray-600">Same as permanent address</span>
+                        <span className="ml-2 text-sm text-muted-foreground">Same as permanent address</span>
                       </label>
                     </div>
                     <div className="grid grid-cols-1 gap-4">
                       <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-2">
+                        <label className="block text-sm font-medium text-foreground mb-2">
                           Street Address
                         </label>
                         <textarea
@@ -409,7 +409,7 @@ export function PersonalInfo() {
                           onChange={(e) => handleChange('mailingAddress', e.target.value)}
                           disabled={!isEditing}
                           rows={2}
-                          className={`w-full px-3 py-2 border border-gray-300 rounded-md ${
+                          className={`w-full px-3 py-2 border border-border rounded-md ${
                             isEditing ? 'bg-white' : 'bg-gray-50'
                           }`}
                           placeholder="Enter mailing address"
@@ -421,7 +421,7 @@ export function PersonalInfo() {
                   {/* City, State, Postal Code, Country */}
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                     <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-2">
+                      <label className="block text-sm font-medium text-foreground mb-2">
                         City
                       </label>
                       <input
@@ -429,7 +429,7 @@ export function PersonalInfo() {
                         value={formData.city || ''}
                         onChange={(e) => handleChange('city', e.target.value)}
                         disabled={!isEditing}
-                        className={`w-full px-3 py-2 border border-gray-300 rounded-md ${
+                        className={`w-full px-3 py-2 border border-border rounded-md ${
                           isEditing ? 'bg-white' : 'bg-gray-50'
                         }`}
                         placeholder="City"
@@ -437,7 +437,7 @@ export function PersonalInfo() {
                     </div>
 
                     <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-2">
+                      <label className="block text-sm font-medium text-foreground mb-2">
                         State/Province
                       </label>
                       <input
@@ -445,7 +445,7 @@ export function PersonalInfo() {
                         value={formData.state || ''}
                         onChange={(e) => handleChange('state', e.target.value)}
                         disabled={!isEditing}
-                        className={`w-full px-3 py-2 border border-gray-300 rounded-md ${
+                        className={`w-full px-3 py-2 border border-border rounded-md ${
                           isEditing ? 'bg-white' : 'bg-gray-50'
                         }`}
                         placeholder="State/Province"
@@ -453,7 +453,7 @@ export function PersonalInfo() {
                     </div>
 
                     <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-2">
+                      <label className="block text-sm font-medium text-foreground mb-2">
                         Postal Code
                       </label>
                       <input
@@ -461,7 +461,7 @@ export function PersonalInfo() {
                         value={formData.postalCode || ''}
                         onChange={(e) => handleChange('postalCode', e.target.value)}
                         disabled={!isEditing}
-                        className={`w-full px-3 py-2 border border-gray-300 rounded-md ${
+                        className={`w-full px-3 py-2 border border-border rounded-md ${
                           isEditing ? 'bg-white' : 'bg-gray-50'
                         }`}
                         placeholder="Postal Code"
@@ -469,7 +469,7 @@ export function PersonalInfo() {
                     </div>
 
                     <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-2">
+                      <label className="block text-sm font-medium text-foreground mb-2">
                         Country
                       </label>
                       <input
@@ -477,7 +477,7 @@ export function PersonalInfo() {
                         value={formData.country || ''}
                         onChange={(e) => handleChange('country', e.target.value)}
                         disabled={!isEditing}
-                        className={`w-full px-3 py-2 border border-gray-300 rounded-md ${
+                        className={`w-full px-3 py-2 border border-border rounded-md ${
                           isEditing ? 'bg-white' : 'bg-gray-50'
                         }`}
                         placeholder="Country"
@@ -505,7 +505,7 @@ export function PersonalInfo() {
               <>
                 <button
                   onClick={handleCancel}
-                  className="inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+                  className="inline-flex items-center px-4 py-2 border border-border text-sm font-medium rounded-md text-foreground bg-card hover:bg-muted/50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
                 >
                   Cancel
                 </button>

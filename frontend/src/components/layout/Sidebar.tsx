@@ -6,7 +6,6 @@ import {
   BookOpen,
   FileText,
   BarChart3,
-  CreditCard,
   UserCircle,
   Target,
   Mail,
@@ -17,6 +16,12 @@ import {
   Star,
   ChevronRight,
   ShoppingCart,
+  Users,
+  GraduationCap,
+  PieChart,
+  CheckCircle2,
+  ClipboardCheck,
+  TrendingUp,
 } from 'lucide-react';
 
 interface SidebarProps {
@@ -34,20 +39,25 @@ export function Sidebar({ isOpen, onClose }: SidebarProps) {
 
   const studentNavItems = [
     { path: '/', label: 'Dashboard', icon: LayoutDashboard },
-    { path: '/courses', label: 'Course Search', icon: BookOpen },
-    { path: '/cart', label: 'Shopping Cart', icon: ShoppingCart },
+    { separator: true, label: 'Enrollment' },
     { path: '/enrollments', label: 'My Enrollments', icon: FileText },
-    { path: '/academic/grades', label: 'My Grades', icon: BarChart3 },
-    { path: '/academic/transcript', label: 'Transcript', icon: FileText },
-    { path: '/planning', label: 'Degree Planning', icon: Target },
-    { path: '/financial', label: 'Financial Info', icon: CreditCard },
-    { path: '/personal', label: 'Personal Info', icon: UserCircle },
-    { separator: true, label: 'Services' },
-    { path: '/academic-calendar', label: 'Academic Calendar', icon: Calendar },
+    { path: '/cart', label: 'Shopping Cart', icon: ShoppingCart },
     { path: '/add-drop', label: 'Add/Drop Courses', icon: Edit3 },
     { path: '/major-change', label: 'Major Change', icon: RotateCcw },
     { path: '/evaluations', label: 'Course Evaluations', icon: Star },
     { path: '/applications', label: 'Applications', icon: Mail },
+    { separator: true, label: 'Academic Records' },
+    { path: '/academic/grades', label: 'My Grades', icon: BarChart3 },
+    { path: '/academic/transcript', label: 'Transcript', icon: FileText },
+    { path: '/academic/analytics', label: 'Grade Analytics', icon: TrendingUp },
+    { separator: true, label: 'Planning' },
+    { path: '/planning', label: 'Degree Planning', icon: Target },
+    { path: '/planning/degree-audit', label: 'Degree Audit', icon: ClipboardCheck },
+    { path: '/planning/graduation-check', label: 'Graduation Check', icon: CheckCircle2 },
+    { separator: true, label: 'Personal' },
+    { path: '/personal', label: 'Personal Info', icon: UserCircle },
+    { separator: true, label: 'Campus' },
+    { path: '/academic-calendar', label: 'Academic Calendar', icon: Calendar },
     { path: '/campus', label: 'Campus Info', icon: Info },
   ];
 
@@ -57,8 +67,24 @@ export function Sidebar({ isOpen, onClose }: SidebarProps) {
     { path: '/campus', label: 'Campus Info', icon: Info },
   ];
 
+  const adminNavItems = [
+    { path: '/admin', label: 'Admin Dashboard', icon: LayoutDashboard },
+    { separator: true, label: 'Management' },
+    { path: '/admin/users', label: 'User Management', icon: Users },
+    { path: '/admin/courses', label: 'Course Management', icon: BookOpen },
+    { path: '/admin/programs', label: 'Program Management', icon: GraduationCap },
+    { path: '/admin/enrollments', label: 'Enrollment Management', icon: FileText },
+    { separator: true, label: 'Analytics & Reports' },
+    { path: '/admin/reports', label: 'Reports & Analytics', icon: PieChart },
+    { separator: true, label: 'Applications' },
+    { path: '/admin/applications', label: 'Review Applications', icon: Mail },
+    { separator: true, label: 'System' },
+    { path: '/campus', label: 'Campus Info', icon: Info },
+  ];
+
   const getNavItems = () => {
     if (user?.role === 'INSTRUCTOR') return facultyNavItems;
+    if (user?.role === 'ADMINISTRATOR') return adminNavItems;
     return studentNavItems;
   };
 
@@ -97,6 +123,8 @@ export function Sidebar({ isOpen, onClose }: SidebarProps) {
                   </div>
                 );
               }
+
+              if (!('path' in item) || !item.path) return null;
 
               const Icon = item.icon;
               const active = isActive(item.path);

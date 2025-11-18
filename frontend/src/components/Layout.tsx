@@ -17,37 +17,37 @@ export function Layout({ children }: LayoutProps) {
 
   // Student Navigation Items
   const studentNavItems = [
-    { path: '/', label: 'Dashboard', icon: '🏠' },
-    { path: '/courses', label: 'Courses', icon: '📚' },
-    { path: '/enrollments', label: 'My Enrollments', icon: '📝' },
-    { path: '/academic/grades', label: 'My Grades', icon: '📊' },
-    { path: '/academic/transcript', label: 'Transcript', icon: '📄' },
-    { path: '/financial', label: 'Financial', icon: '💳' },
-    { path: '/personal', label: 'Personal Info', icon: '👤' },
-    { path: '/planning', label: 'Degree Planning', icon: '🎓' },
-    { path: '/applications', label: 'Applications', icon: '✉️' },
-    { path: '/campus', label: 'Campus Info', icon: '📢' },
-    { path: '/academic-calendar', label: 'Academic Calendar', icon: '📅' },
-    { path: '/add-drop', label: 'Add/Drop Courses', icon: '📝' },
-    { path: '/major-change', label: 'Major Change', icon: '🎯' },
-    { path: '/evaluations', label: 'Course Evaluations', icon: '⭐' },
+    { path: '/', label: 'Dashboard' },
+    { path: '/courses', label: 'Courses' },
+    { path: '/enrollments', label: 'My Enrollments' },
+    { path: '/academic/grades', label: 'My Grades' },
+    { path: '/academic/transcript', label: 'Transcript' },
+    { path: '/financial', label: 'Financial' },
+    { path: '/personal', label: 'Personal Info' },
+    { path: '/planning', label: 'Degree Planning' },
+    { path: '/applications', label: 'Applications' },
+    { path: '/campus', label: 'Campus Info' },
+    { path: '/academic-calendar', label: 'Academic Calendar' },
+    { path: '/add-drop', label: 'Add/Drop Courses' },
+    { path: '/major-change', label: 'Major Change' },
+    { path: '/evaluations', label: 'Course Evaluations' },
   ];
 
   // Faculty Navigation Items
   const facultyNavItems = [
-    { path: '/faculty', label: 'Faculty Dashboard', icon: '🏠' },
-    { path: '/faculty/courses', label: 'My Courses', icon: '📚' },
-    { path: '/faculty/grades', label: 'Grade Submission', icon: '📝' },
-    { path: '/campus', label: 'Campus Info', icon: '📢' },
+    { path: '/faculty', label: 'Faculty Dashboard' },
+    { path: '/faculty/courses', label: 'My Courses' },
+    { path: '/faculty/grades', label: 'Grade Submission' },
+    { path: '/campus', label: 'Campus Info' },
   ];
 
   // Admin Navigation Items
   const adminNavItems = [
-    { path: '/admin', label: 'Admin Dashboard', icon: '🏠' },
-    { path: '/admin/users', label: 'User Management', icon: '👥' },
-    { path: '/admin/courses', label: 'Course Management', icon: '📚' },
-    { path: '/admin/enrollments', label: 'Enrollments', icon: '📝' },
-    { path: '/campus', label: 'Campus Info', icon: '📢' },
+    { path: '/admin', label: 'Admin Dashboard' },
+    { path: '/admin/users', label: 'User Management' },
+    { path: '/admin/courses', label: 'Course Management' },
+    { path: '/admin/enrollments', label: 'Enrollments' },
+    { path: '/campus', label: 'Campus Info' },
   ];
 
   const getNavItems = () => {
@@ -65,12 +65,9 @@ export function Layout({ children }: LayoutProps) {
           <div className="flex justify-between h-16">
             <div className="flex items-center">
               <Link to="/" className="flex items-center">
-                <div className="flex-shrink-0">
-                  <span className="text-2xl">🎓</span>
-                </div>
                 <div className="ml-3">
                   <h1 className="text-lg font-bold text-gray-900">
-                    CUHK-Shenzhen SIS
+                    CUHKSZ SIS
                   </h1>
                   <p className="text-xs text-gray-500">Student Information System</p>
                 </div>
@@ -88,7 +85,6 @@ export function Layout({ children }: LayoutProps) {
                         : 'text-gray-700 hover:bg-gray-100'
                     }`}
                   >
-                    <span className="mr-1.5">{item.icon}</span>
                     {item.label}
                   </Link>
                 ))}
@@ -112,7 +108,6 @@ export function Layout({ children }: LayoutProps) {
                                 : 'text-gray-700 hover:bg-gray-100'
                             }`}
                           >
-                            <span className="mr-2">{item.icon}</span>
                             {item.label}
                           </Link>
                         ))}
@@ -174,7 +169,6 @@ export function Layout({ children }: LayoutProps) {
                       : 'text-gray-700 hover:bg-gray-100'
                   }`}
                 >
-                  <span className="mr-2">{item.icon}</span>
                   {item.label}
                 </Link>
               ))}

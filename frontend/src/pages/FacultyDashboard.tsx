@@ -23,21 +23,18 @@ export function FacultyDashboard() {
     {
       title: 'Grade Submission',
       description: 'Submit or update student grades',
-      icon: '📝',
       link: '/faculty/grades',
       color: 'bg-blue-50 border-blue-200',
     },
     {
       title: 'Attendance',
       description: 'Mark student attendance',
-      icon: '✅',
       link: '/faculty/attendance',
       color: 'bg-green-50 border-green-200',
     },
     {
       title: 'Course Materials',
       description: 'Upload and manage materials',
-      icon: '📚',
       link: '/faculty/materials',
       color: 'bg-purple-50 border-purple-200',
     },
@@ -47,10 +44,10 @@ export function FacultyDashboard() {
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
       {/* Header */}
       <div className="mb-8">
-        <h1 className="text-3xl font-bold text-gray-900">
+        <h1 className="text-3xl font-bold text-foreground">
           Welcome, {user?.fullName}
         </h1>
-        <p className="mt-2 text-gray-600">Faculty Center - Manage your courses and students</p>
+        <p className="mt-2 text-muted-foreground">Faculty Center - Manage your courses and students</p>
       </div>
 
       {/* Quick Stats */}
@@ -62,40 +59,37 @@ export function FacultyDashboard() {
               <div className="mt-2 text-4xl font-bold">{courses?.length || 0}</div>
               <div className="mt-1 text-sm opacity-90">This Semester</div>
             </div>
-            <div className="text-5xl opacity-80">📚</div>
           </div>
         </div>
 
-        <div className="bg-white rounded-lg shadow p-6 border-l-4 border-green-500">
+        <div className="bg-card rounded-lg shadow p-6 border-l-4 border-green-500">
           <div className="flex items-center justify-between">
             <div>
-              <div className="text-sm font-medium text-gray-600">Total Students</div>
-              <div className="mt-2 text-3xl font-bold text-gray-900">
+              <div className="text-sm font-medium text-muted-foreground">Total Students</div>
+              <div className="mt-2 text-3xl font-bold text-foreground">
                 {courses?.reduce((sum: number, course: any) => sum + (course.enrollment?.length || 0), 0) || 0}
               </div>
-              <div className="mt-1 text-sm text-gray-500">Across all courses</div>
+              <div className="mt-1 text-sm text-muted-foreground">Across all courses</div>
             </div>
-            <div className="text-4xl">👥</div>
           </div>
         </div>
 
-        <div className="bg-white rounded-lg shadow p-6 border-l-4 border-purple-500">
+        <div className="bg-card rounded-lg shadow p-6 border-l-4 border-purple-500">
           <div className="flex items-center justify-between">
             <div>
-              <div className="text-sm font-medium text-gray-600">Office Hours</div>
-              <div className="mt-2 text-lg font-semibold text-gray-900">
+              <div className="text-sm font-medium text-muted-foreground">Office Hours</div>
+              <div className="mt-2 text-lg font-semibold text-foreground">
                 {user?.faculty?.officeHours || 'Not set'}
               </div>
-              <div className="mt-1 text-sm text-gray-500">{user?.faculty?.office || 'N/A'}</div>
+              <div className="mt-1 text-sm text-muted-foreground">{user?.faculty?.office || 'N/A'}</div>
             </div>
-            <div className="text-4xl">🕐</div>
           </div>
         </div>
       </div>
 
       {/* Quick Actions */}
       <div className="mb-8">
-        <h2 className="text-xl font-semibold text-gray-900 mb-4">Quick Actions</h2>
+        <h2 className="text-xl font-semibold text-foreground mb-4">Quick Actions</h2>
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
           {quickActions.map((action) => (
             <Link
@@ -103,12 +97,9 @@ export function FacultyDashboard() {
               to={action.link}
               className={`block ${action.color} border-2 rounded-lg p-6 hover:shadow-lg transition-all duration-200 hover:-translate-y-1`}
             >
-              <div className="flex items-center">
-                <span className="text-4xl mr-4">{action.icon}</span>
-                <div>
-                  <h3 className="text-lg font-semibold text-gray-900">{action.title}</h3>
-                  <p className="mt-1 text-sm text-gray-600">{action.description}</p>
-                </div>
+              <div>
+                <h3 className="text-lg font-semibold text-foreground">{action.title}</h3>
+                <p className="mt-1 text-sm text-muted-foreground">{action.description}</p>
               </div>
             </Link>
           ))}
@@ -117,54 +108,51 @@ export function FacultyDashboard() {
 
       {/* My Courses */}
       <div>
-        <h2 className="text-xl font-semibold text-gray-900 mb-4">My Courses</h2>
+        <h2 className="text-xl font-semibold text-foreground mb-4">My Courses</h2>
         {courses && courses.length > 0 ? (
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
             {courses.map((course: any) => (
               <div
                 key={course.id}
-                className="bg-white rounded-lg shadow-lg overflow-hidden hover:shadow-xl transition-shadow"
+                className="bg-card rounded-lg shadow-lg overflow-hidden hover:shadow-xl transition-shadow"
               >
                 <div className="p-6">
                   <div className="flex items-start justify-between mb-4">
                     <div className="flex-1">
-                      <div className="flex items-center mb-2">
-                        <span className="text-2xl mr-3">📖</span>
-                        <div>
-                          <h3 className="text-lg font-semibold text-gray-900">
-                            {course.courseCode}
-                          </h3>
-                          <p className="text-sm text-gray-600">{course.courseName}</p>
-                        </div>
+                      <div className="mb-2">
+                        <h3 className="text-lg font-semibold text-foreground">
+                          {course.courseCode}
+                        </h3>
+                        <p className="text-sm text-muted-foreground">{course.courseName}</p>
                       </div>
                     </div>
-                    <span className="inline-flex items-center px-3 py-1 rounded-full text-xs font-semibold bg-blue-100 text-blue-800">
+                    <span className="inline-flex items-center px-3 py-1 rounded-full text-xs font-semibold bg-blue-100 dark:bg-blue-900 text-blue-800 dark:text-blue-200">
                       {course.credits} Credits
                     </span>
                   </div>
 
                   <div className="grid grid-cols-2 gap-4 mb-4 text-sm">
                     <div>
-                      <div className="text-gray-600">Schedule</div>
-                      <div className="font-medium text-gray-900">
+                      <div className="text-muted-foreground">Schedule</div>
+                      <div className="font-medium text-foreground">
                         {course.schedule || 'TBD'}
                       </div>
                     </div>
                     <div>
-                      <div className="text-gray-600">Room</div>
-                      <div className="font-medium text-gray-900">
+                      <div className="text-muted-foreground">Room</div>
+                      <div className="font-medium text-foreground">
                         {course.location || 'TBD'}
                       </div>
                     </div>
                     <div>
-                      <div className="text-gray-600">Enrolled Students</div>
-                      <div className="font-medium text-gray-900">
+                      <div className="text-muted-foreground">Enrolled Students</div>
+                      <div className="font-medium text-foreground">
                         {course.enrollment?.length || 0} / {course.capacity || 0}
                       </div>
                     </div>
                     <div>
-                      <div className="text-gray-600">Department</div>
-                      <div className="font-medium text-gray-900">
+                      <div className="text-muted-foreground">Department</div>
+                      <div className="font-medium text-foreground">
                         {course.department || 'N/A'}
                       </div>
                     </div>
@@ -172,7 +160,7 @@ export function FacultyDashboard() {
 
                   {/* Progress Bar for Enrollment */}
                   <div className="mb-4">
-                    <div className="flex items-center justify-between text-xs text-gray-600 mb-1">
+                    <div className="flex items-center justify-between text-xs text-muted-foreground mb-1">
                       <span>Enrollment</span>
                       <span>{((course.enrollment?.length || 0) / (course.capacity || 1) * 100).toFixed(0)}%</span>
                     </div>
@@ -185,7 +173,7 @@ export function FacultyDashboard() {
                   </div>
 
                   {/* Course Actions */}
-                  <div className="flex items-center justify-between pt-4 border-t border-gray-200">
+                  <div className="flex items-center justify-between pt-4 border-t border-border">
                     <Link
                       to={`/faculty/courses/${course.id}/roster`}
                       className="inline-flex items-center text-sm text-blue-600 hover:text-blue-700 font-medium"
@@ -219,12 +207,12 @@ export function FacultyDashboard() {
             ))}
           </div>
         ) : (
-          <div className="bg-white rounded-lg shadow p-12 text-center">
-            <svg className="mx-auto h-12 w-12 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <div className="bg-card rounded-lg shadow p-12 text-center">
+            <svg className="mx-auto h-12 w-12 text-muted-foreground" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
             </svg>
-            <h3 className="mt-2 text-sm font-medium text-gray-900">No courses assigned</h3>
-            <p className="mt-1 text-sm text-gray-500">
+            <h3 className="mt-2 text-sm font-medium text-foreground">No courses assigned</h3>
+            <p className="mt-1 text-sm text-muted-foreground">
               You don't have any courses assigned this semester.
             </p>
           </div>

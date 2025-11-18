@@ -88,9 +88,38 @@ export const enrollmentAPI = {
 
 // Admin API
 export const adminAPI = {
+  // Statistics
+  getStatistics: () => api.get('/admin/statistics'),
   getStats: () => api.get('/admin/stats'),
+
+  // User Management
+  getAllUsers: (params?: { role?: string; page?: number; limit?: number }) =>
+    api.get('/admin/users', { params }),
+  createUser: (data: any) => api.post('/admin/users', data),
+  updateUser: (id: number, data: any) => api.put(`/admin/users/${id}`, data),
+  deleteUser: (id: number) => api.delete(`/admin/users/${id}`),
+
+  // Course Management
+  getAllCourses: () => api.get('/admin/courses'),
+  createCourse: (data: any) => api.post('/admin/courses', data),
+  updateCourse: (id: number, data: any) => api.put(`/admin/courses/${id}`, data),
+  deleteCourse: (id: number) => api.delete(`/admin/courses/${id}`),
+  getCourseEnrollments: (id: number) => api.get(`/admin/courses/${id}/enrollments`),
+
+  // Program Management
+  getAllPrograms: () => api.get('/admin/programs'),
+  createProgram: (data: any) => api.post('/admin/programs', data),
+  updateProgram: (id: number, data: any) => api.put(`/admin/programs/${id}`, data),
+  deleteProgram: (id: number) => api.delete(`/admin/programs/${id}`),
+
+  // Enrollment Management
   getAllEnrollments: () => api.get('/admin/enrollments'),
   updateEnrollment: (id: number, data: any) => api.put(`/admin/enrollments/${id}`, data),
+  deleteEnrollment: (id: number) => api.delete(`/admin/enrollments/${id}`),
+
+  // Reports
+  getReports: () => api.get('/admin/reports'),
+  exportReport: (type: string) => api.get(`/admin/reports/export/${type}`),
 };
 
 // Academic Records API
@@ -101,24 +130,10 @@ export const academicAPI = {
   getCourseGrade: (courseId: number) => api.get(`/academic/grades/course/${courseId}`),
   getTranscript: () => api.get('/academic/transcript'),
   getUnofficialTranscript: () => api.get('/academic/transcript/unofficial'),
-  generateTranscriptPDF: () => api.get('/academic/transcript/pdf'),
+  generateTranscriptPDF: () => api.get('/academic/transcript/pdf', { responseType: 'blob' }),
   getGPA: () => api.get('/academic/gpa'),
   getGPAHistory: () => api.get('/academic/gpa/history'),
-};
-
-// Financial API
-export const financialAPI = {
-  getAccount: () => api.get('/financial/account'),
-  getCharges: () => api.get('/financial/charges'),
-  getUnpaidCharges: () => api.get('/financial/charges/unpaid'),
-  getPayments: () => api.get('/financial/payments'),
-  makePayment: (data: {
-    amount: number;
-    method: string;
-    referenceNumber: string;
-  }) => api.post('/financial/payments', data),
-  getStatement: (semester: string, year: number) =>
-    api.get(`/financial/statement/${semester}/${year}`),
+  getAlerts: () => api.get('/students/alerts'),
 };
 
 // Applications API
@@ -169,6 +184,7 @@ export const planningAPI = {
   getAdvisor: () => api.get('/planning/advisor'),
   getCoursePlan: () => api.get('/planning/plan'),
   saveCoursePlan: (data: any) => api.post('/planning/plan', data),
+  getGraduationCheck: () => api.get('/planning/graduation-check'),
 };
 
 // Faculty Center API

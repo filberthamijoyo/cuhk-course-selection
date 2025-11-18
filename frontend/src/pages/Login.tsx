@@ -27,13 +27,13 @@ export function Login() {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-50 py-12 px-4 sm:px-6 lg:px-8">
+    <div className="min-h-screen flex items-center justify-center bg-muted/50 py-12 px-4 sm:px-6 lg:px-8">
       <div className="max-w-md w-full space-y-8">
         <div>
-          <h2 className="mt-6 text-center text-3xl font-extrabold text-gray-900">
+          <h2 className="mt-6 text-center text-3xl font-extrabold text-foreground">
             CUHK Course Selection System
           </h2>
-          <p className="mt-2 text-center text-sm text-gray-600">
+          <p className="mt-2 text-center text-sm text-muted-foreground">
             Sign in to your account
           </p>
         </div>
@@ -88,7 +88,7 @@ export function Login() {
           </div>
 
           <div className="text-sm text-center">
-            <p className="text-gray-600">
+            <p className="text-muted-foreground">
               Demo Credentials:<br />
               Student: <strong>120090001</strong> / <strong>Password123!</strong><br />
               Instructor: <strong>inst001</strong> / <strong>Password123!</strong><br />

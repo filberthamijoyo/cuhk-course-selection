@@ -4,23 +4,32 @@ import { AuthProvider, useAuth } from './context/AuthContext';
 import { ThemeProvider } from './contexts/ThemeContext';
 import { MainLayout } from './components/layout/MainLayout';
 import { Login } from './pages/Login';
-import { Dashboard } from './pages/Dashboard';
-import { CourseList } from './pages/CourseList';
+import { CourseDetails } from './pages/CourseDetails';
 import { MyEnrollments } from './pages/MyEnrollments';
 
 // New Student Pages
 import { StudentDashboard } from './pages/StudentDashboard';
 import { MyGrades } from './pages/MyGrades';
-import { FinancialInfo } from './pages/FinancialInfo';
 import { PersonalInfo } from './pages/PersonalInfo';
 import { DegreePlanning } from './pages/DegreePlanning';
 import { Applications } from './pages/Applications';
 import { CampusInfo } from './pages/CampusInfo';
 import { Transcript } from './pages/Transcript';
+import { DegreeAudit } from './pages/DegreeAudit';
+import { GraduationCheck } from './pages/GraduationCheck';
+import { GradeAnalytics } from './pages/GradeAnalytics';
 
 // Faculty Pages
 import { FacultyDashboard } from './pages/FacultyDashboard';
 import { GradeSubmission } from './pages/GradeSubmission';
+
+// Admin Pages
+import { AdminDashboard } from './pages/admin/AdminDashboard';
+import { UserManagement } from './pages/admin/UserManagement';
+import { CourseManagement } from './pages/admin/CourseManagement';
+import { ProgramManagement } from './pages/admin/ProgramManagement';
+import { EnrollmentManagement } from './pages/admin/EnrollmentManagement';
+import { Reports } from './pages/admin/Reports';
 
 // New Feature Pages
 import AcademicCalendarPage from './pages/AcademicCalendarPage';
@@ -63,8 +72,8 @@ function RoleDashboard() {
     return <FacultyDashboard />;
   }
 
-  if (user?.role === 'ADMIN') {
-    return <Dashboard />; // Admin uses the existing Dashboard
+  if (user?.role === 'ADMINISTRATOR') {
+    return <AdminDashboard />;
   }
 
   return <StudentDashboard />;
@@ -93,11 +102,11 @@ function App() {
 
             {/* Course Management */}
             <Route
-              path="/courses"
+              path="/courses/:courseId"
               element={
                 <ProtectedRoute>
                   <MainLayout>
-                    <CourseList />
+                    <CourseDetails />
                   </MainLayout>
                 </ProtectedRoute>
               }
@@ -144,14 +153,34 @@ function App() {
                 </ProtectedRoute>
               }
             />
-
-            {/* Financial */}
             <Route
-              path="/financial"
+              path="/academic/analytics"
               element={
                 <ProtectedRoute>
                   <MainLayout>
-                    <FinancialInfo />
+                    <GradeAnalytics />
+                  </MainLayout>
+                </ProtectedRoute>
+              }
+            />
+
+            {/* Degree Planning Pages */}
+            <Route
+              path="/planning/degree-audit"
+              element={
+                <ProtectedRoute>
+                  <MainLayout>
+                    <DegreeAudit />
+                  </MainLayout>
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/planning/graduation-check"
+              element={
+                <ProtectedRoute>
+                  <MainLayout>
+                    <GraduationCheck />
                   </MainLayout>
                 </ProtectedRoute>
               }
@@ -248,6 +277,78 @@ function App() {
                 <ProtectedRoute>
                   <MainLayout>
                     <EvaluationsPage />
+                  </MainLayout>
+                </ProtectedRoute>
+              }
+            />
+
+            {/* Admin Routes */}
+            <Route
+              path="/admin"
+              element={
+                <ProtectedRoute>
+                  <MainLayout>
+                    <AdminDashboard />
+                  </MainLayout>
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/admin/users"
+              element={
+                <ProtectedRoute>
+                  <MainLayout>
+                    <UserManagement />
+                  </MainLayout>
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/admin/courses"
+              element={
+                <ProtectedRoute>
+                  <MainLayout>
+                    <CourseManagement />
+                  </MainLayout>
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/admin/programs"
+              element={
+                <ProtectedRoute>
+                  <MainLayout>
+                    <ProgramManagement />
+                  </MainLayout>
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/admin/enrollments"
+              element={
+                <ProtectedRoute>
+                  <MainLayout>
+                    <EnrollmentManagement />
+                  </MainLayout>
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/admin/reports"
+              element={
+                <ProtectedRoute>
+                  <MainLayout>
+                    <Reports />
+                  </MainLayout>
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/admin/applications"
+              element={
+                <ProtectedRoute>
+                  <MainLayout>
+                    <Applications />
                   </MainLayout>
                 </ProtectedRoute>
               }
