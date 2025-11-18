@@ -23,19 +23,6 @@ export async function getDegreeAudit(req: AuthRequest, res: Response) {
             requirements: true,
           },
         },
-        users_students_user_idTousers: {
-          include: {
-            enrollments: {
-              where: {
-                status: EnrollmentStatus.CONFIRMED,
-              },
-              include: {
-                courses: true,
-                grades: true,
-              },
-            },
-          },
-        },
       },
     });
 
@@ -50,8 +37,20 @@ export async function getDegreeAudit(req: AuthRequest, res: Response) {
       });
     }
 
+    // Get enrollments separately through the users table
+    const enrollments = await prisma.enrollments.findMany({
+      where: {
+        user_id: userId,
+        status: EnrollmentStatus.CONFIRMED,
+      },
+      include: {
+        courses: true,
+        grades: true,
+      },
+    });
+
     // Filter enrollments to only include those with published grades
-    const enrollmentsWithPublishedGrades = student.users_students_user_idTousers.enrollments.filter(
+    const enrollmentsWithPublishedGrades = enrollments.filter(
       e => e.grades?.status === 'PUBLISHED'
     );
 
@@ -155,25 +154,6 @@ export async function getProgress(req: AuthRequest, res: Response) {
       where: { user_id: userId },
       include: {
         majors: true,
-        users_students_user_idTousers: {
-          include: {
-            enrollments: {
-              where: {
-                status: EnrollmentStatus.CONFIRMED,
-              },
-              include: {
-                courses: true,
-                grades: true,
-              },
-            },
-            transcripts: {
-              orderBy: {
-                generated_at: 'desc',
-              },
-              take: 1,
-            },
-          },
-        },
       },
     });
 
@@ -181,8 +161,20 @@ export async function getProgress(req: AuthRequest, res: Response) {
       throw new AppError('Student record not found', 404);
     }
 
+    // Get enrollments separately
+    const enrollments = await prisma.enrollments.findMany({
+      where: {
+        user_id: userId,
+        status: EnrollmentStatus.CONFIRMED,
+      },
+      include: {
+        courses: true,
+        grades: true,
+      },
+    });
+
     // Filter enrollments to only include those with published grades
-    const enrollmentsWithPublishedGrades = student.users_students_user_idTousers.enrollments.filter(
+    const enrollmentsWithPublishedGrades = enrollments.filter(
       e => e.grades?.status === 'PUBLISHED'
     );
 
@@ -258,19 +250,6 @@ export async function getGraduationEligibility(req: AuthRequest, res: Response) 
             requirements: true,
           },
         },
-        users_students_user_idTousers: {
-          include: {
-            enrollments: {
-              where: {
-                status: EnrollmentStatus.CONFIRMED,
-              },
-              include: {
-                courses: true,
-                grades: true,
-              },
-            },
-          },
-        },
       },
     });
 
@@ -308,7 +287,19 @@ export async function getGraduationEligibility(req: AuthRequest, res: Response) 
       });
     }
 
-    const enrollmentsWithPublishedGrades = student.users_students_user_idTousers.enrollments.filter(
+    // Get enrollments separately
+    const enrollments = await prisma.enrollments.findMany({
+      where: {
+        user_id: userId,
+        status: EnrollmentStatus.CONFIRMED,
+      },
+      include: {
+        courses: true,
+        grades: true,
+      },
+    });
+
+    const enrollmentsWithPublishedGrades = enrollments.filter(
       e => e.grades?.status === 'PUBLISHED'
     );
 
