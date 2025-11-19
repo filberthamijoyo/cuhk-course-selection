@@ -31,6 +31,21 @@ import {
   getSystemStatistics,
   getEnrollmentStatistics,
   getGradeStatistics,
+  // Waitlist Management
+  getCourseWaitlist,
+  promoteFromWaitlist,
+  // Conflict Detection
+  checkConflicts,
+  // Degree Audit
+  getDegreeAudit,
+  // Program Management
+  getPrograms,
+  getProgramById,
+  createProgram,
+  updateProgram,
+  // Bulk Operations
+  bulkImportStudents,
+  exportStudents,
 } from '../controllers/adminController';
 import { authenticate, requireAdmin } from '../middleware/auth';
 import { adminLimiter } from '../middleware/rateLimiter';
@@ -253,5 +268,105 @@ router.get('/statistics/enrollments', asyncHandler(getEnrollmentStatistics));
  * @access  Private (Admin)
  */
 router.get('/statistics/grades', asyncHandler(getGradeStatistics));
+
+/**
+ * ================
+ * WAITLIST MANAGEMENT
+ * ================
+ */
+
+/**
+ * @route   GET /api/admin/courses/:id/waitlist
+ * @desc    Get course waitlist
+ * @access  Private (Admin)
+ */
+router.get('/courses/:id/waitlist', asyncHandler(getCourseWaitlist));
+
+/**
+ * @route   POST /api/admin/enrollments/:id/promote
+ * @desc    Promote student from waitlist
+ * @access  Private (Admin)
+ */
+router.post('/enrollments/:id/promote', asyncHandler(promoteFromWaitlist));
+
+/**
+ * ================
+ * CONFLICT DETECTION
+ * ================
+ */
+
+/**
+ * @route   POST /api/admin/conflicts/check
+ * @desc    Check for schedule and enrollment conflicts
+ * @access  Private (Admin)
+ */
+router.post('/conflicts/check', asyncHandler(checkConflicts));
+
+/**
+ * ================
+ * DEGREE AUDIT
+ * ================
+ */
+
+/**
+ * @route   GET /api/admin/students/:id/degree-audit
+ * @desc    Get degree audit for student
+ * @access  Private (Admin)
+ */
+router.get('/students/:id/degree-audit', asyncHandler(getDegreeAudit));
+
+/**
+ * ================
+ * PROGRAM MANAGEMENT
+ * ================
+ */
+
+/**
+ * @route   GET /api/admin/programs
+ * @desc    Get all programs/majors
+ * @access  Private (Admin)
+ */
+router.get('/programs', asyncHandler(getPrograms));
+
+/**
+ * @route   GET /api/admin/programs/:id
+ * @desc    Get program by ID
+ * @access  Private (Admin)
+ */
+router.get('/programs/:id', asyncHandler(getProgramById));
+
+/**
+ * @route   POST /api/admin/programs
+ * @desc    Create new program
+ * @access  Private (Admin)
+ */
+router.post('/programs', asyncHandler(createProgram));
+
+/**
+ * @route   PUT /api/admin/programs/:id
+ * @desc    Update program
+ * @access  Private (Admin)
+ */
+router.put('/programs/:id', asyncHandler(updateProgram));
+
+/**
+ * ================
+ * BULK OPERATIONS
+ * ================
+ */
+
+/**
+ * @route   POST /api/admin/students/import
+ * @desc    Bulk import students from CSV
+ * @access  Private (Admin)
+ */
+router.post('/students/import', asyncHandler(bulkImportStudents));
+
+/**
+ * @route   GET /api/admin/students/export
+ * @desc    Export students to CSV
+ * @access  Private (Admin)
+ */
+router.get('/students/export', asyncHandler(exportStudents));
 
 export default router;
