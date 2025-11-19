@@ -1710,3 +1710,780 @@ export const getGradeStatistics = async (req: AuthRequest, res: Response): Promi
     throw error;
   }
 };
+
+/**
+ * ===================
+ * WAITLIST MANAGEMENT
+ * ===================
+ */
+
+/**
+ * Get waitlist for a course
+ * GET /api/admin/courses/:id/waitlist
+ */
+export const getCourseWaitlist = async (req: AuthRequest, res: Response): Promise<void> => {
+  try {
+    const { id } = req.params;
+
+    const waitlist = await prisma.enrollment.findMany({
+      where: {
+        courseId: parseInt(id),
+        status: EnrollmentStatus.WAITLISTED,
+      },
+      include: {
+        user: {
+          select: {
+            id: true,
+            fullName: true,
+            email: true,
+            userIdentifier: true,
+            student: {
+              select: {
+                studentId: true,
+                year: true,
+                major: true,
+              },
+            },
+          },
+        },
+      },
+      orderBy: {
+        waitlistPosition: 'asc',
+      },
+    });
+
+    res.status(200).json({
+      success: true,
+      data: waitlist,
+    });
+  } catch (error) {
+    throw error;
+  }
+};
+
+/**
+ * Promote student from waitlist
+ * POST /api/admin/enrollments/:id/promote
+ */
+export const promoteFromWaitlist = async (req: AuthRequest, res: Response): Promise<void> => {
+  try {
+    const { id } = req.params;
+
+    const enrollment = await prisma.enrollment.findUnique({
+      where: { id: parseInt(id) },
+      include: { course: true },
+    });
+
+    if (!enrollment) {
+      throw new NotFoundError('Enrollment not found');
+    }
+
+    if (enrollment.status !== EnrollmentStatus.WAITLISTED) {
+      throw new BadRequestError('Enrollment is not in waitlisted status');
+    }
+
+    // Check if course has space
+    if (enrollment.course.currentEnrollment >= enrollment.course.maxCapacity) {
+      throw new BadRequestError('Course is full');
+    }
+
+    // Promote to confirmed
+    const updated = await prisma.$transaction(async (tx) => {
+      await tx.course.update({
+        where: { id: enrollment.courseId },
+        data: { currentEnrollment: { increment: 1 } },
+      });
+
+      return tx.enrollment.update({
+        where: { id: parseInt(id) },
+        data: {
+          status: EnrollmentStatus.CONFIRMED,
+          waitlistPosition: null,
+        },
+        include: {
+          user: true,
+          course: true,
+        },
+      });
+    });
+
+    // Log audit
+    await prisma.auditLog.create({
+      data: {
+        userId: req.user!.id,
+        action: 'PROMOTE',
+        entityType: 'ENROLLMENT',
+        entityId: enrollment.id,
+        changes: {
+          oldStatus: enrollment.status,
+          newStatus: EnrollmentStatus.CONFIRMED,
+        },
+      },
+    });
+
+    res.status(200).json({
+      success: true,
+      message: 'Student promoted from waitlist',
+      data: updated,
+    });
+  } catch (error) {
+    throw error;
+  }
+};
+
+/**
+ * ===================
+ * CONFLICT DETECTION
+ * ===================
+ */
+
+/**
+ * Check for schedule conflicts
+ * POST /api/admin/conflicts/check
+ */
+export const checkConflicts = async (req: AuthRequest, res: Response): Promise<void> => {
+  try {
+    const { user_id, course_ids } = req.body;
+
+    if (!user_id || !course_ids || !Array.isArray(course_ids)) {
+      throw new BadRequestError('user_id and course_ids array are required');
+    }
+
+    // Get all courses with time slots
+    const courses = await prisma.course.findMany({
+      where: {
+        id: { in: course_ids },
+      },
+      include: {
+        timeSlots: true,
+      },
+    });
+
+    // Get user's existing enrollments
+    const existingEnrollments = await prisma.enrollment.findMany({
+      where: {
+        userId: user_id,
+        status: EnrollmentStatus.CONFIRMED,
+      },
+      include: {
+        course: {
+          include: {
+            timeSlots: true,
+          },
+        },
+      },
+    });
+
+    const conflicts: any[] = [];
+
+    // Check time conflicts
+    for (const newCourse of courses) {
+      for (const existingEnrollment of existingEnrollments) {
+        for (const newSlot of newCourse.timeSlots) {
+          for (const existingSlot of existingEnrollment.course.timeSlots) {
+            // Check if same day and overlapping times
+            if (newSlot.dayOfWeek === existingSlot.dayOfWeek) {
+              const newStart = newSlot.startTime;
+              const newEnd = newSlot.endTime;
+              const existingStart = existingSlot.startTime;
+              const existingEnd = existingSlot.endTime;
+
+              if (
+                (newStart >= existingStart && newStart < existingEnd) ||
+                (newEnd > existingStart && newEnd <= existingEnd) ||
+                (newStart <= existingStart && newEnd >= existingEnd)
+              ) {
+                conflicts.push({
+                  type: 'TIME_CONFLICT',
+                  severity: 'HIGH',
+                  newCourse: {
+                    id: newCourse.id,
+                    code: newCourse.courseCode,
+                    name: newCourse.courseName,
+                    timeSlot: `${newSlot.dayOfWeek} ${newSlot.startTime}-${newSlot.endTime}`,
+                  },
+                  conflictingCourse: {
+                    id: existingEnrollment.course.id,
+                    code: existingEnrollment.course.courseCode,
+                    name: existingEnrollment.course.courseName,
+                    timeSlot: `${existingSlot.dayOfWeek} ${existingSlot.startTime}-${existingSlot.endTime}`,
+                  },
+                  message: 'Schedule conflict detected',
+                });
+              }
+            }
+          }
+        }
+      }
+    }
+
+    // Check for duplicate enrollment
+    for (const newCourse of courses) {
+      for (const existingEnrollment of existingEnrollments) {
+        if (newCourse.id === existingEnrollment.course.id) {
+          conflicts.push({
+            type: 'DUPLICATE_ENROLLMENT',
+            severity: 'HIGH',
+            courseId: newCourse.id,
+            courseCode: newCourse.courseCode,
+            message: 'Already enrolled in this course',
+          });
+        }
+      }
+    }
+
+    // Check credit overload
+    const totalCredits = courses.reduce((sum, c) => sum + c.credits, 0);
+    const existingCredits = existingEnrollments.reduce(
+      (sum, e) => sum + e.course.credits,
+      0
+    );
+    const newTotalCredits = totalCredits + existingCredits;
+
+    if (newTotalCredits > 18) {
+      conflicts.push({
+        type: 'CREDIT_OVERLOAD',
+        severity: 'MEDIUM',
+        currentCredits: existingCredits,
+        newCredits: totalCredits,
+        totalCredits: newTotalCredits,
+        limit: 18,
+        message: `Total credits (${newTotalCredits}) exceeds limit of 18`,
+      });
+    }
+
+    res.status(200).json({
+      success: true,
+      data: {
+        hasConflicts: conflicts.length > 0,
+        conflicts,
+      },
+    });
+  } catch (error) {
+    throw error;
+  }
+};
+
+/**
+ * ===================
+ * DEGREE AUDIT
+ * ===================
+ */
+
+/**
+ * Get degree audit for student
+ * GET /api/admin/students/:id/degree-audit
+ */
+export const getDegreeAudit = async (req: AuthRequest, res: Response): Promise<void> => {
+  try {
+    const { id } = req.params;
+
+    const student = await prisma.student.findUnique({
+      where: { id: parseInt(id) },
+      include: {
+        major: {
+          include: {
+            requirements: true,
+          },
+        },
+        user: {
+          include: {
+            enrollments: {
+              where: {
+                status: EnrollmentStatus.CONFIRMED,
+              },
+              include: {
+                course: true,
+                grade: {
+                  where: {
+                    status: GradeStatus.PUBLISHED,
+                  },
+                },
+              },
+            },
+          },
+        },
+      },
+    });
+
+    if (!student) {
+      throw new NotFoundError('Student not found');
+    }
+
+    if (!student.major) {
+      return res.status(200).json({
+        success: true,
+        data: {
+          message: 'Student has no declared major',
+          totalCreditsRequired: 120,
+          totalCreditsEarned: 0,
+          requirements: [],
+        },
+      });
+    }
+
+    // Calculate completed requirements
+    const completedCourses = student.user.enrollments
+      .filter((e) => e.grade && e.grade.letterGrade !== 'F' && e.grade.letterGrade !== 'W')
+      .map((e) => ({
+        courseCode: e.course.courseCode,
+        courseName: e.course.courseName,
+        credits: e.course.credits,
+        grade: e.grade?.letterGrade,
+        department: e.course.department,
+      }));
+
+    const totalCreditsEarned = completedCourses.reduce((sum, c) => sum + c.credits, 0);
+
+    // Check each requirement
+    const requirementStatus = student.major.requirements.map((req) => {
+      const requiredCourses = (req.courses as any).courses || [];
+
+      const completed = completedCourses.filter((course) =>
+        requiredCourses.includes(course.courseCode)
+      );
+
+      const completedCredits = completed.reduce((sum, c) => sum + c.credits, 0);
+      const isComplete = completedCredits >= req.credits;
+
+      return {
+        id: req.id,
+        category: req.category,
+        name: req.name,
+        creditsRequired: req.credits,
+        creditsCompleted: completedCredits,
+        status: isComplete ? 'COMPLETE' : completedCredits > 0 ? 'IN_PROGRESS' : 'NOT_STARTED',
+        completedCourses: completed,
+        remainingCredits: Math.max(0, req.credits - completedCredits),
+      };
+    });
+
+    // Calculate GPA
+    const gradesWithPoints = completedCourses.filter((c) => c.grade && c.grade !== 'PA');
+    let totalPoints = 0;
+    let totalCreditHours = 0;
+
+    gradesWithPoints.forEach((course) => {
+      const grade = course.grade;
+      let gradePoint = 0;
+
+      // Convert letter grade to GPA
+      switch (grade) {
+        case 'A': gradePoint = 4.0; break;
+        case 'A-': gradePoint = 3.7; break;
+        case 'B+': gradePoint = 3.3; break;
+        case 'B': gradePoint = 3.0; break;
+        case 'B-': gradePoint = 2.7; break;
+        case 'C+': gradePoint = 2.3; break;
+        case 'C': gradePoint = 2.0; break;
+        case 'C-': gradePoint = 1.7; break;
+        case 'D+': gradePoint = 1.3; break;
+        case 'D': gradePoint = 1.0; break;
+        case 'D-': gradePoint = 0.7; break;
+        case 'F': gradePoint = 0.0; break;
+      }
+
+      totalPoints += gradePoint * course.credits;
+      totalCreditHours += course.credits;
+    });
+
+    const gpa = totalCreditHours > 0 ? totalPoints / totalCreditHours : 0;
+
+    const meetsGPARequirement = gpa >= 2.0;
+    const meetsCreditsRequirement = totalCreditsEarned >= student.major.totalCredits;
+    const allRequirementsMet = requirementStatus.every((r) => r.status === 'COMPLETE');
+
+    res.status(200).json({
+      success: true,
+      data: {
+        student: {
+          id: student.id,
+          name: student.user.fullName,
+          studentId: student.studentId,
+          major: student.major.name,
+          expectedGraduation: student.expectedGrad,
+        },
+        summary: {
+          totalCreditsRequired: student.major.totalCredits,
+          totalCreditsEarned,
+          creditsRemaining: Math.max(0, student.major.totalCredits - totalCreditsEarned),
+          gpa: parseFloat(gpa.toFixed(3)),
+          meetsGPARequirement,
+          meetsCreditsRequirement,
+          graduationEligible: meetsGPARequirement && meetsCreditsRequirement && allRequirementsMet,
+        },
+        requirements: requirementStatus,
+      },
+    });
+  } catch (error) {
+    throw error;
+  }
+};
+
+/**
+ * ===================
+ * PROGRAM MANAGEMENT
+ * ===================
+ */
+
+/**
+ * Get all programs/majors
+ * GET /api/admin/programs
+ */
+export const getPrograms = async (req: AuthRequest, res: Response): Promise<void> => {
+  try {
+    const { department, degree } = req.query;
+
+    const where: Prisma.MajorWhereInput = {};
+    if (department) where.department = department as string;
+    if (degree) where.degree = degree as any;
+
+    const programs = await prisma.major.findMany({
+      where,
+      include: {
+        requirements: true,
+        _count: {
+          select: {
+            students: true,
+          },
+        },
+      },
+      orderBy: {
+        name: 'asc',
+      },
+    });
+
+    res.status(200).json({
+      success: true,
+      data: programs,
+    });
+  } catch (error) {
+    throw error;
+  }
+};
+
+/**
+ * Get program by ID
+ * GET /api/admin/programs/:id
+ */
+export const getProgramById = async (req: AuthRequest, res: Response): Promise<void> => {
+  try {
+    const { id } = req.params;
+
+    const program = await prisma.major.findUnique({
+      where: { id: parseInt(id) },
+      include: {
+        requirements: true,
+        students: {
+          include: {
+            user: {
+              select: {
+                id: true,
+                fullName: true,
+                email: true,
+              },
+            },
+          },
+        },
+      },
+    });
+
+    if (!program) {
+      throw new NotFoundError('Program not found');
+    }
+
+    res.status(200).json({
+      success: true,
+      data: program,
+    });
+  } catch (error) {
+    throw error;
+  }
+};
+
+/**
+ * Create new program
+ * POST /api/admin/programs
+ */
+export const createProgram = async (req: AuthRequest, res: Response): Promise<void> => {
+  try {
+    const { code, name, department, degree, total_credits, description, requirements } = req.body;
+
+    const existing = await prisma.major.findUnique({
+      where: { code },
+    });
+
+    if (existing) {
+      throw new ConflictError('Program with this code already exists');
+    }
+
+    const program = await prisma.major.create({
+      data: {
+        code,
+        name,
+        department,
+        degree,
+        totalCredits: total_credits,
+        description,
+        requirements: {
+          create: requirements?.map((req: any) => ({
+            category: req.category,
+            name: req.name,
+            credits: req.credits,
+            courses: req.courses,
+            description: req.description,
+          })) || [],
+        },
+      },
+      include: {
+        requirements: true,
+      },
+    });
+
+    // Log audit
+    await prisma.auditLog.create({
+      data: {
+        userId: req.user!.id,
+        action: 'CREATE',
+        entityType: 'PROGRAM',
+        entityId: program.id,
+        changes: { created: program },
+      },
+    });
+
+    res.status(201).json({
+      success: true,
+      message: 'Program created successfully',
+      data: program,
+    });
+  } catch (error) {
+    throw error;
+  }
+};
+
+/**
+ * Update program
+ * PUT /api/admin/programs/:id
+ */
+export const updateProgram = async (req: AuthRequest, res: Response): Promise<void> => {
+  try {
+    const { id } = req.params;
+    const { name, description, total_credits } = req.body;
+
+    const program = await prisma.major.findUnique({
+      where: { id: parseInt(id) },
+    });
+
+    if (!program) {
+      throw new NotFoundError('Program not found');
+    }
+
+    const updateData: Prisma.MajorUpdateInput = {};
+    if (name) updateData.name = name;
+    if (description) updateData.description = description;
+    if (total_credits !== undefined) updateData.totalCredits = total_credits;
+
+    const updated = await prisma.major.update({
+      where: { id: parseInt(id) },
+      data: updateData,
+      include: {
+        requirements: true,
+      },
+    });
+
+    // Log audit
+    await prisma.auditLog.create({
+      data: {
+        userId: req.user!.id,
+        action: 'UPDATE',
+        entityType: 'PROGRAM',
+        entityId: program.id,
+        changes: { before: program, after: updated },
+      },
+    });
+
+    res.status(200).json({
+      success: true,
+      message: 'Program updated successfully',
+      data: updated,
+    });
+  } catch (error) {
+    throw error;
+  }
+};
+
+/**
+ * ===================
+ * BULK OPERATIONS
+ * ===================
+ */
+
+/**
+ * Bulk import students from CSV
+ * POST /api/admin/students/import
+ */
+export const bulkImportStudents = async (req: AuthRequest, res: Response): Promise<void> => {
+  try {
+    const { students } = req.body;
+
+    if (!Array.isArray(students) || students.length === 0) {
+      throw new BadRequestError('students array is required');
+    }
+
+    const results = {
+      success: [] as any[],
+      failed: [] as any[],
+    };
+
+    const bcrypt = require('bcryptjs');
+
+    for (const studentData of students) {
+      try {
+        const {
+          student_id,
+          email,
+          full_name,
+          password,
+          major_id,
+          year,
+          admission_date,
+        } = studentData;
+
+        // Check if exists
+        const existing = await prisma.user.findFirst({
+          where: {
+            OR: [{ email }, { userIdentifier: student_id }],
+          },
+        });
+
+        if (existing) {
+          results.failed.push({
+            studentId: student_id,
+            email,
+            reason: 'User already exists',
+          });
+          continue;
+        }
+
+        const passwordHash = await bcrypt.hash(password || 'Welcome123!', 10);
+
+        const user = await prisma.user.create({
+          data: {
+            userIdentifier: student_id,
+            email,
+            passwordHash,
+            fullName: full_name,
+            role: 'STUDENT',
+            student: {
+              create: {
+                studentId: student_id,
+                majorId: major_id,
+                year: year || 1,
+                admissionDate: new Date(admission_date),
+                status: StudentStatus.ACTIVE,
+              },
+            },
+          },
+          include: {
+            student: true,
+          },
+        });
+
+        results.success.push({
+          id: user.id,
+          studentId: student_id,
+          email,
+          fullName: full_name,
+        });
+      } catch (error: any) {
+        results.failed.push({
+          studentId: studentData.student_id,
+          email: studentData.email,
+          reason: error.message || 'Import failed',
+        });
+      }
+    }
+
+    // Log audit
+    await prisma.auditLog.create({
+      data: {
+        userId: req.user!.id,
+        action: 'BULK_IMPORT',
+        entityType: 'STUDENT',
+        entityId: 0,
+        changes: {
+          total: students.length,
+          success: results.success.length,
+          failed: results.failed.length,
+        },
+      },
+    });
+
+    res.status(200).json({
+      success: true,
+      message: `Imported ${results.success.length} students, ${results.failed.length} failed`,
+      data: results,
+    });
+  } catch (error) {
+    throw error;
+  }
+};
+
+/**
+ * Export students to CSV format
+ * GET /api/admin/students/export
+ */
+export const exportStudents = async (req: AuthRequest, res: Response): Promise<void> => {
+  try {
+    const { status, major, year } = req.query;
+
+    const where: Prisma.StudentWhereInput = {};
+    if (status) where.status = status as StudentStatus;
+    if (year) where.year = parseInt(year as string);
+    if (major) {
+      where.major = {
+        name: { contains: major as string, mode: 'insensitive' },
+      };
+    }
+
+    const students = await prisma.student.findMany({
+      where,
+      include: {
+        user: {
+          select: {
+            userIdentifier: true,
+            email: true,
+            fullName: true,
+            createdAt: true,
+          },
+        },
+        major: true,
+      },
+    });
+
+    const csvData = students.map((s) => ({
+      student_id: s.studentId,
+      user_identifier: s.user.userIdentifier,
+      full_name: s.user.fullName,
+      email: s.user.email,
+      major: s.major?.name || '',
+      major_code: s.major?.code || '',
+      year: s.year,
+      status: s.status,
+      admission_date: s.admissionDate.toISOString().split('T')[0],
+      expected_graduation: s.expectedGrad?.toISOString().split('T')[0] || '',
+      created_at: s.user.createdAt.toISOString(),
+    }));
+
+    res.status(200).json({
+      success: true,
+      data: csvData,
+      metadata: {
+        total: csvData.length,
+        exportedAt: new Date().toISOString(),
+      },
+    });
+  } catch (error) {
+    throw error;
+  }
+};

@@ -29,6 +29,8 @@ import { UserManagement } from './pages/admin/UserManagement';
 import { CourseManagement } from './pages/admin/CourseManagement';
 import { ProgramManagement } from './pages/admin/ProgramManagement';
 import { EnrollmentManagement } from './pages/admin/EnrollmentManagement';
+import { EnrollmentApprovals } from './pages/admin/EnrollmentApprovals';
+import { GradeApprovals } from './pages/admin/GradeApprovals';
 import { Reports } from './pages/admin/Reports';
 
 // New Feature Pages
@@ -329,6 +331,26 @@ function App() {
                 <ProtectedRoute>
                   <MainLayout>
                     <EnrollmentManagement />
+                  </MainLayout>
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/admin/enrollments/approvals"
+              element={
+                <ProtectedRoute>
+                  <MainLayout>
+                    <EnrollmentApprovals />
+                  </MainLayout>
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/admin/grades/approvals"
+              element={
+                <ProtectedRoute>
+                  <MainLayout>
+                    <GradeApprovals />
                   </MainLayout>
                 </ProtectedRoute>
               }

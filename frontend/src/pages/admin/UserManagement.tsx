@@ -12,6 +12,7 @@ import {
   GraduationCap,
 } from 'lucide-react';
 import api from '../../services/api';
+import { CreateStudentModal } from '../../components/admin/CreateStudentModal';
 
 interface User {
   id: number;
@@ -234,6 +235,9 @@ export function UserManagement() {
           </div>
         )}
       </div>
+
+      {/* Create Student Modal */}
+      <CreateStudentModal isOpen={showCreateModal} onClose={() => setShowCreateModal(false)} />
     </div>
   );
 }
