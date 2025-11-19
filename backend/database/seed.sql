@@ -52,54 +52,54 @@ INSERT INTO courses (course_code, course_name, description, credits, instructor_
 -- Insert time slots for courses
 
 -- CSCI1010 (Monday & Wednesday 10:30-11:45)
-INSERT INTO time_slots (course_id, day_of_week, start_time, end_time, location) VALUES
-(1, 'Monday', '10:30:00', '11:45:00', 'LSB LT1'),
-(1, 'Wednesday', '10:30:00', '11:45:00', 'LSB LT1');
+INSERT INTO time_slots (course_id, day_of_week, start_time, end_time, location, type) VALUES
+(1, 'Monday', '10:30:00', '11:45:00', 'LSB LT1', 'LECTURE'),
+(1, 'Wednesday', '10:30:00', '11:45:00', 'LSB LT1', 'LECTURE');
 
 -- CSCI2100 (Tuesday & Thursday 14:30-15:45)
-INSERT INTO time_slots (course_id, day_of_week, start_time, end_time, location) VALUES
-(2, 'Tuesday', '14:30:00', '15:45:00', 'SHB 833'),
-(2, 'Thursday', '14:30:00', '15:45:00', 'SHB 833');
+INSERT INTO time_slots (course_id, day_of_week, start_time, end_time, location, type) VALUES
+(2, 'Tuesday', '14:30:00', '15:45:00', 'SHB 833', 'LECTURE'),
+(2, 'Thursday', '14:30:00', '15:45:00', 'SHB 833', 'LECTURE');
 
 -- CSCI3170 (Monday & Wednesday 14:30-15:45)
-INSERT INTO time_slots (course_id, day_of_week, start_time, end_time, location) VALUES
-(3, 'Monday', '14:30:00', '15:45:00', 'ERB 905'),
-(3, 'Wednesday', '14:30:00', '15:45:00', 'ERB 905');
+INSERT INTO time_slots (course_id, day_of_week, start_time, end_time, location, type) VALUES
+(3, 'Monday', '14:30:00', '15:45:00', 'ERB 905', 'LECTURE'),
+(3, 'Wednesday', '14:30:00', '15:45:00', 'ERB 905', 'LECTURE');
 
 -- CSCI3320 (Tuesday & Thursday 10:30-11:45)
-INSERT INTO time_slots (course_id, day_of_week, start_time, end_time, location) VALUES
-(4, 'Tuesday', '10:30:00', '11:45:00', 'SHB 910'),
-(4, 'Thursday', '10:30:00', '11:45:00', 'SHB 910');
+INSERT INTO time_slots (course_id, day_of_week, start_time, end_time, location, type) VALUES
+(4, 'Tuesday', '10:30:00', '11:45:00', 'SHB 910', 'LECTURE'),
+(4, 'Thursday', '10:30:00', '11:45:00', 'SHB 910', 'LECTURE');
 
 -- CSCI4430 (Monday 16:30-18:15)
-INSERT INTO time_slots (course_id, day_of_week, start_time, end_time, location) VALUES
-(5, 'Monday', '16:30:00', '18:15:00', 'ERB 1013');
+INSERT INTO time_slots (course_id, day_of_week, start_time, end_time, location, type) VALUES
+(5, 'Monday', '16:30:00', '18:15:00', 'ERB 1013', 'LECTURE');
 
 -- CSCI3230 (Tuesday & Thursday 14:30-15:45)
-INSERT INTO time_slots (course_id, day_of_week, start_time, end_time, location) VALUES
-(6, 'Tuesday', '14:30:00', '15:45:00', 'SHB 833'),
-(6, 'Thursday', '14:30:00', '15:45:00', 'SHB 833');
+INSERT INTO time_slots (course_id, day_of_week, start_time, end_time, location, type) VALUES
+(6, 'Tuesday', '14:30:00', '15:45:00', 'SHB 833', 'LECTURE'),
+(6, 'Thursday', '14:30:00', '15:45:00', 'SHB 833', 'LECTURE');
 
 -- CSCI3251 (Wednesday & Friday 10:30-11:45)
-INSERT INTO time_slots (course_id, day_of_week, start_time, end_time, location) VALUES
-(7, 'Wednesday', '10:30:00', '11:45:00', 'ERB 905'),
-(7, 'Friday', '10:30:00', '11:45:00', 'ERB 905');
+INSERT INTO time_slots (course_id, day_of_week, start_time, end_time, location, type) VALUES
+(7, 'Wednesday', '10:30:00', '11:45:00', 'ERB 905', 'LECTURE'),
+(7, 'Friday', '10:30:00', '11:45:00', 'ERB 905', 'LECTURE');
 
 -- MATH1010 (Monday, Wednesday, Friday 09:00-09:50)
-INSERT INTO time_slots (course_id, day_of_week, start_time, end_time, location) VALUES
-(8, 'Monday', '09:00:00', '09:50:00', 'LSB LT2'),
-(8, 'Wednesday', '09:00:00', '09:50:00', 'LSB LT2'),
-(8, 'Friday', '09:00:00', '09:50:00', 'LSB LT2');
+INSERT INTO time_slots (course_id, day_of_week, start_time, end_time, location, type) VALUES
+(8, 'Monday', '09:00:00', '09:50:00', 'LSB LT2', 'LECTURE'),
+(8, 'Wednesday', '09:00:00', '09:50:00', 'LSB LT2', 'LECTURE'),
+(8, 'Friday', '09:00:00', '09:50:00', 'LSB LT2', 'LECTURE');
 
 -- MATH2010 (Tuesday & Thursday 09:00-10:15)
-INSERT INTO time_slots (course_id, day_of_week, start_time, end_time, location) VALUES
-(9, 'Tuesday', '09:00:00', '10:15:00', 'LSB LT3'),
-(9, 'Thursday', '09:00:00', '10:15:00', 'LSB LT3');
+INSERT INTO time_slots (course_id, day_of_week, start_time, end_time, location, type) VALUES
+(9, 'Tuesday', '09:00:00', '10:15:00', 'LSB LT3', 'LECTURE'),
+(9, 'Thursday', '09:00:00', '10:15:00', 'LSB LT3', 'LECTURE');
 
 -- MATH3230 (Monday & Wednesday 16:30-17:45)
-INSERT INTO time_slots (course_id, day_of_week, start_time, end_time, location) VALUES
-(10, 'Monday', '16:30:00', '17:45:00', 'LSB C1'),
-(10, 'Wednesday', '16:30:00', '17:45:00', 'LSB C1');
+INSERT INTO time_slots (course_id, day_of_week, start_time, end_time, location, type) VALUES
+(10, 'Monday', '16:30:00', '17:45:00', 'LSB C1', 'LECTURE'),
+(10, 'Wednesday', '16:30:00', '17:45:00', 'LSB C1', 'LECTURE');
 
 -- Insert sample enrollments
 

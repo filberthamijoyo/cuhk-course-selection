@@ -1,7 +1,8 @@
 import { prisma } from '../config/prisma';
 import { enrollmentQueue } from '../config/queue';
-import { EnrollmentStatus, Prisma } from '@prisma/client';
+import { EnrollmentStatus, Prisma, Semester } from '@prisma/client';
 import { ValidationError } from '../utils/errors';
+import { getCurrentTerm } from '../utils/helpers';
 
 /**
  * Enrollment Service with Concurrency Control
@@ -172,7 +173,7 @@ export async function processEnrollment(userId: number, courseId: number) {
       }
     }
 
-    // 4. Check time conflicts
+    // 4. Check time conflicts (lectures and tutorials cannot overlap)
     const userEnrollments = await tx.enrollments.findMany({
       where: {
         user_id: userId,
@@ -187,10 +188,10 @@ export async function processEnrollment(userId: number, courseId: number) {
       }
     });
 
-    const hasConflict = checkTimeConflict(
-      userEnrollments.flatMap((e: any) => e.courses.time_slots),
-      course.time_slots
-    );
+    const existingSlots = userEnrollments.flatMap((e: any) => e.courses.time_slots);
+    const newSlots = course.time_slots;
+
+    const hasConflict = checkTimeConflict(existingSlots, newSlots);
 
     if (hasConflict) {
       // Create rejected enrollment
@@ -204,10 +205,10 @@ export async function processEnrollment(userId: number, courseId: number) {
       });
 
       await createAuditLog(tx, userId, 'ENROLL_REJECTED', enrollment.id, {
-        reason: 'Time conflict detected'
+        reason: 'Time conflict detected with existing schedule'
       });
 
-      throw new ValidationError('Time conflict detected with your existing courses');
+      throw new ValidationError('Time conflict detected: You cannot enroll in sessions that overlap with your existing schedule');
     }
 
     // 5. Check credit limit (optional business rule)
@@ -410,15 +411,30 @@ export async function dropEnrollment(enrollmentId: number, userId: number) {
 
 /**
  * Get user's enrollments
+ * @param userId - User ID
+ * @param options - Optional filters for semester and year
  */
-export async function getUserEnrollments(userId: number) {
+export async function getUserEnrollments(
+  userId: number,
+  options?: { semester?: Semester; year?: number }
+) {
+  const whereClause: Prisma.enrollmentsWhereInput = {
+    user_id: userId,
+    status: {
+      in: [EnrollmentStatus.CONFIRMED, EnrollmentStatus.PENDING, EnrollmentStatus.WAITLISTED]
+    }
+  };
+
+  // Filter by term if provided
+  if (options?.semester || options?.year) {
+    whereClause.courses = {
+      ...(options.semester && { semester: options.semester }),
+      ...(options.year && { year: options.year })
+    };
+  }
+
   const enrollments = await prisma.enrollments.findMany({
-    where: {
-      user_id: userId,
-      status: {
-        in: [EnrollmentStatus.CONFIRMED, EnrollmentStatus.PENDING, EnrollmentStatus.WAITLISTED]
-      }
-    },
+    where: whereClause,
     include: {
       courses: {
         include: {
@@ -437,6 +453,14 @@ export async function getUserEnrollments(userId: number) {
   });
 
   return enrollments;
+}
+
+/**
+ * Get user's enrollments for the current term
+ */
+export async function getCurrentTermEnrollments(userId: number) {
+  const { semester, year } = getCurrentTerm();
+  return getUserEnrollments(userId, { semester, year });
 }
 
 /**

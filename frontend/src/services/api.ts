@@ -80,7 +80,8 @@ export const courseAPI = {
 // Enrollment API
 export const enrollmentAPI = {
   enroll: (courseId: number) => api.post('/enrollments', { courseId }),
-  getMyCourses: () => api.get('/enrollments/my-courses'),
+  getMyCourses: (currentTerm?: boolean) => 
+    api.get('/enrollments/my-courses', { params: currentTerm ? { currentTerm: true } : {} }),
   drop: (enrollmentId: number) => api.delete(`/enrollments/${enrollmentId}`),
   getStatus: (jobId: string) => api.get(`/enrollments/status/${jobId}`),
   getWaitlist: (courseId: number) => api.get(`/enrollments/waitlist/${courseId}`),

@@ -198,6 +198,35 @@ export const getSemesterFromMonth = (month: number): string => {
 };
 
 /**
+ * Get current semester and year
+ * Returns { semester: 'FALL' | 'SPRING' | 'SUMMER', year: number }
+ */
+export const getCurrentTerm = (): { semester: 'FALL' | 'SPRING' | 'SUMMER'; year: number } => {
+  const now = new Date();
+  const month = now.getMonth() + 1; // 1-12
+  const year = now.getFullYear();
+  
+  let semester: 'FALL' | 'SPRING' | 'SUMMER';
+  let academicYear: number;
+  
+  if (month >= 8 && month <= 12) {
+    // Fall semester (Aug-Dec) - belongs to the current year
+    semester = 'FALL';
+    academicYear = year;
+  } else if (month >= 1 && month <= 5) {
+    // Spring semester (Jan-May) - belongs to the previous calendar year
+    semester = 'SPRING';
+    academicYear = year;
+  } else {
+    // Summer semester (Jun-Jul) - belongs to the previous calendar year
+    semester = 'SUMMER';
+    academicYear = year;
+  }
+  
+  return { semester, year: academicYear };
+};
+
+/**
  * Calculate GPA from grades
  */
 export const calculateGPA = (grades: string[]): number => {

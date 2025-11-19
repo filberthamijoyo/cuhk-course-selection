@@ -70,10 +70,17 @@ export const createCourse = async (req: AuthRequest, res: Response): Promise<voi
     const insertedSlots = [];
     for (const slot of time_slots) {
       const slotResult = await client.query(
-        `INSERT INTO time_slots (course_id, day_of_week, start_time, end_time, location)
-         VALUES ($1, $2, $3, $4, $5)
+        `INSERT INTO time_slots (course_id, day_of_week, start_time, end_time, location, type)
+         VALUES ($1, $2, $3, $4, $5, $6)
          RETURNING *`,
-        [course.id, slot.day_of_week, slot.start_time, slot.end_time, slot.location]
+        [
+          course.id,
+          slot.day_of_week,
+          slot.start_time,
+          slot.end_time,
+          slot.location,
+          (slot.type || 'LECTURE').toUpperCase(),
+        ]
       );
       insertedSlots.push(slotResult.rows[0]);
     }

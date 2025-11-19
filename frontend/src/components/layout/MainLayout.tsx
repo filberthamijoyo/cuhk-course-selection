@@ -28,7 +28,9 @@ export function MainLayout({ children }: MainLayoutProps) {
         </main>
       </div>
 
-      <Footer />
+      <div className="lg:pl-64">
+        <Footer />
+      </div>
     </div>
   );
 }

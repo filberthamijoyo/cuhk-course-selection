@@ -11,7 +11,7 @@ const AcademicCalendar: React.FC = () => {
   const [error, setError] = useState<string | null>(null);
   const [selectedTerm, setSelectedTerm] = useState<string>('');
   const [selectedYear, setSelectedYear] = useState<number>(new Date().getFullYear());
-  const [viewMode, setViewMode] = useState<'calendar' | 'list'>('list');
+  const [viewMode, setViewMode] = useState<'calendar' | 'list'>('calendar');
   const [currentMonth, setCurrentMonth] = useState(new Date().getMonth());
   const [currentYear, setCurrentYear] = useState(new Date().getFullYear());
 
@@ -255,9 +255,9 @@ const AcademicCalendar: React.FC = () => {
         </div>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+      <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
         {/* Main Events List/Calendar */}
-        <div className="lg:col-span-2">
+        <div className="lg:col-span-3">
           <div className="bg-white rounded-lg shadow-md p-6">
             <h3 className="text-lg font-semibold text-gray-900 mb-4">
               {viewMode === 'list' ? 'All Events' : 'Calendar View'}

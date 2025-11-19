@@ -23,6 +23,7 @@ export interface TimeSlot {
   start_time: string; // Format: "HH:MM:SS"
   end_time: string;   // Format: "HH:MM:SS"
   location: string;
+  type?: string;      // "LECTURE" or "TUTORIAL", defaults to "LECTURE"
   created_at: Date;
   updated_at: Date;
 }
@@ -102,6 +103,7 @@ export interface TimeSlotCreateRequest {
   start_time: string;
   end_time: string;
   location: string;
+  type?: string; // "LECTURE" or "TUTORIAL", defaults to "LECTURE"
 }
 
 /**

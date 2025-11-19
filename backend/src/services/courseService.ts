@@ -192,7 +192,10 @@ export async function createCourse(data: any) {
       instructor_id: data.instructorId,
       updated_at: new Date(),
       time_slots: data.timeSlots ? {
-        create: data.timeSlots
+        create: data.timeSlots.map((slot: any) => ({
+          ...slot,
+          type: (slot.type || 'LECTURE').toUpperCase()
+        }))
       } : undefined
     },
     include: {
