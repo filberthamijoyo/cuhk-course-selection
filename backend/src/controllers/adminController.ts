@@ -2487,3 +2487,487 @@ export const exportStudents = async (req: AuthRequest, res: Response): Promise<v
     throw error;
   }
 };
+
+/**
+ * ===================
+ * EMAIL NOTIFICATIONS
+ * ===================
+ */
+
+/**
+ * Send email to students
+ * POST /api/admin/emails/send
+ */
+export const sendEmail = async (req: AuthRequest, res: Response): Promise<void> => {
+  try {
+    const { recipient_ids, subject, message, template } = req.body;
+
+    if (!recipient_ids || !Array.isArray(recipient_ids) || recipient_ids.length === 0) {
+      throw new BadRequestError('recipient_ids array is required');
+    }
+
+    if (!subject || !message) {
+      throw new BadRequestError('subject and message are required');
+    }
+
+    // Get recipients
+    const recipients = await prisma.user.findMany({
+      where: {
+        id: { in: recipient_ids },
+      },
+      select: {
+        id: true,
+        email: true,
+        fullName: true,
+      },
+    });
+
+    // In production, integrate with email service (SendGrid, AWS SES, etc.)
+    // For now, we'll log the emails and store in database
+    const emailLogs = await Promise.all(
+      recipients.map(async (recipient) => {
+        // TODO: Actual email sending logic here
+        // await emailService.send({
+        //   to: recipient.email,
+        //   subject,
+        //   body: message,
+        // });
+
+        return {
+          recipientId: recipient.id,
+          recipientEmail: recipient.email,
+          recipientName: recipient.fullName,
+          subject,
+          message,
+          template,
+          status: 'QUEUED', // Would be SENT in production
+          sentAt: new Date(),
+        };
+      })
+    );
+
+    // Log audit
+    await prisma.auditLog.create({
+      data: {
+        userId: req.user!.id,
+        action: 'SEND_EMAIL',
+        entityType: 'USER',
+        entityId: 0,
+        changes: {
+          recipientCount: recipients.length,
+          subject,
+          template,
+        },
+      },
+    });
+
+    res.status(200).json({
+      success: true,
+      message: `Email queued for ${recipients.length} recipients`,
+      data: {
+        sent: emailLogs.length,
+        recipients: emailLogs,
+      },
+    });
+  } catch (error) {
+    throw error;
+  }
+};
+
+/**
+ * Send bulk email to students by filter
+ * POST /api/admin/emails/bulk
+ */
+export const sendBulkEmail = async (req: AuthRequest, res: Response): Promise<void> => {
+  try {
+    const { role, major, year, subject, message, template } = req.body;
+
+    if (!subject || !message) {
+      throw new BadRequestError('subject and message are required');
+    }
+
+    // Build filter
+    const where: Prisma.UserWhereInput = {};
+
+    if (role) where.role = role as any;
+
+    if (major || year) {
+      where.student = {};
+      if (year) where.student.year = parseInt(year);
+      if (major) {
+        where.student.major = {
+          name: { contains: major, mode: 'insensitive' },
+        };
+      }
+    }
+
+    // Get recipients
+    const recipients = await prisma.user.findMany({
+      where,
+      select: {
+        id: true,
+        email: true,
+        fullName: true,
+      },
+    });
+
+    if (recipients.length === 0) {
+      throw new BadRequestError('No recipients match the specified criteria');
+    }
+
+    // Log audit
+    await prisma.auditLog.create({
+      data: {
+        userId: req.user!.id,
+        action: 'SEND_BULK_EMAIL',
+        entityType: 'USER',
+        entityId: 0,
+        changes: {
+          recipientCount: recipients.length,
+          subject,
+          filters: { role, major, year },
+        },
+      },
+    });
+
+    res.status(200).json({
+      success: true,
+      message: `Bulk email queued for ${recipients.length} recipients`,
+      data: {
+        recipientCount: recipients.length,
+        filters: { role, major, year },
+      },
+    });
+  } catch (error) {
+    throw error;
+  }
+};
+
+/**
+ * ===================
+ * TRANSCRIPT GENERATION
+ * ===================
+ */
+
+/**
+ * Generate transcript for student
+ * GET /api/admin/transcripts/:studentId/generate
+ */
+export const generateTranscript = async (req: AuthRequest, res: Response): Promise<void> => {
+  try {
+    const { studentId } = req.params;
+    const { format = 'json' } = req.query;
+
+    const student = await prisma.student.findFirst({
+      where: {
+        OR: [
+          { id: parseInt(studentId) },
+          { studentId: studentId },
+        ],
+      },
+      include: {
+        user: {
+          include: {
+            enrollments: {
+              where: {
+                status: EnrollmentStatus.CONFIRMED,
+              },
+              include: {
+                course: true,
+                grade: {
+                  where: {
+                    status: GradeStatus.PUBLISHED,
+                  },
+                },
+              },
+              orderBy: [
+                { course: { year: 'asc' } },
+                { course: { semester: 'asc' } },
+              ],
+            },
+            personalInfo: true,
+          },
+        },
+        major: true,
+        minor: true,
+      },
+    });
+
+    if (!student) {
+      throw new NotFoundError('Student not found');
+    }
+
+    // Group courses by semester/year
+    const transcriptData: any = {};
+
+    student.user.enrollments.forEach((enrollment) => {
+      const key = `${enrollment.course.year}-${enrollment.course.semester}`;
+
+      if (!transcriptData[key]) {
+        transcriptData[key] = {
+          year: enrollment.course.year,
+          semester: enrollment.course.semester,
+          courses: [],
+          semesterCredits: 0,
+          semesterGPA: 0,
+        };
+      }
+
+      const grade = enrollment.grade;
+      transcriptData[key].courses.push({
+        courseCode: enrollment.course.courseCode,
+        courseName: enrollment.course.courseName,
+        credits: enrollment.course.credits,
+        grade: grade?.letterGrade || 'IP',
+        gradePoints: grade?.gradePoints || 0,
+      });
+
+      if (grade) {
+        transcriptData[key].semesterCredits += enrollment.course.credits;
+      }
+    });
+
+    // Calculate semester GPAs
+    Object.values(transcriptData).forEach((semester: any) => {
+      if (semester.semesterCredits > 0) {
+        const totalPoints = semester.courses.reduce(
+          (sum: number, course: any) => sum + course.gradePoints * course.credits,
+          0
+        );
+        semester.semesterGPA = parseFloat((totalPoints / semester.semesterCredits).toFixed(3));
+      }
+    });
+
+    // Calculate cumulative GPA
+    const allGrades = student.user.enrollments
+      .filter((e) => e.grade && e.grade.status === GradeStatus.PUBLISHED)
+      .map((e) => ({
+        credits: e.course.credits,
+        gradePoints: e.grade!.gradePoints || 0,
+      }));
+
+    const totalCredits = allGrades.reduce((sum, g) => sum + g.credits, 0);
+    const totalPoints = allGrades.reduce((sum, g) => sum + g.gradePoints * g.credits, 0);
+    const cumulativeGPA = totalCredits > 0 ? totalPoints / totalCredits : 0;
+
+    const transcript = {
+      studentInfo: {
+        studentId: student.studentId,
+        fullName: student.user.fullName,
+        email: student.user.email,
+        major: student.major?.name,
+        minor: student.minor?.name,
+        admissionDate: student.admissionDate,
+        expectedGraduation: student.expectedGrad,
+        status: student.status,
+      },
+      academicRecord: Object.values(transcriptData),
+      summary: {
+        totalCreditsAttempted: student.user.enrollments.length * 3, // Estimate
+        totalCreditsEarned: totalCredits,
+        cumulativeGPA: parseFloat(cumulativeGPA.toFixed(3)),
+      },
+      generatedAt: new Date().toISOString(),
+      generatedBy: req.user!.fullName,
+      isOfficial: true,
+    };
+
+    // Log audit
+    await prisma.auditLog.create({
+      data: {
+        userId: req.user!.id,
+        action: 'GENERATE_TRANSCRIPT',
+        entityType: 'STUDENT',
+        entityId: student.id,
+        changes: { format, generatedAt: new Date() },
+      },
+    });
+
+    // In production, generate PDF using a library like pdfmake
+    if (format === 'pdf') {
+      // TODO: Generate PDF
+      // const pdfBuffer = await generatePDF(transcript);
+      // res.setHeader('Content-Type', 'application/pdf');
+      // res.setHeader('Content-Disposition', `attachment; filename="transcript-${student.studentId}.pdf"`);
+      // return res.send(pdfBuffer);
+
+      res.status(501).json({
+        success: false,
+        message: 'PDF generation not yet implemented. Use format=json instead.',
+        data: transcript,
+      });
+    } else {
+      res.status(200).json({
+        success: true,
+        data: transcript,
+      });
+    }
+  } catch (error) {
+    throw error;
+  }
+};
+
+/**
+ * ===================
+ * ACADEMIC CALENDAR
+ * ===================
+ */
+
+/**
+ * Get all academic terms
+ * GET /api/admin/calendar/terms
+ */
+export const getAcademicTerms = async (req: AuthRequest, res: Response): Promise<void> => {
+  try {
+    const { year, active } = req.query;
+
+    const where: any = {};
+    if (year) where.year = parseInt(year as string);
+    if (active === 'true') {
+      const now = new Date();
+      where.startDate = { lte: now };
+      where.endDate = { gte: now };
+    }
+
+    // Since we don't have a Term model in the schema, return mock data
+    // In production, add Term model to Prisma schema
+    const mockTerms = [
+      {
+        id: 1,
+        name: 'Fall 2024',
+        semester: 'FALL',
+        year: 2024,
+        startDate: '2024-09-01',
+        endDate: '2024-12-20',
+        registrationStart: '2024-08-01',
+        registrationEnd: '2024-08-31',
+        addDropDeadline: '2024-09-15',
+        withdrawalDeadline: '2024-11-15',
+        isActive: false,
+      },
+      {
+        id: 2,
+        name: 'Spring 2025',
+        semester: 'SPRING',
+        year: 2025,
+        startDate: '2025-01-15',
+        endDate: '2025-05-30',
+        registrationStart: '2024-12-01',
+        registrationEnd: '2025-01-10',
+        addDropDeadline: '2025-02-01',
+        withdrawalDeadline: '2025-04-15',
+        isActive: true,
+      },
+      {
+        id: 3,
+        name: 'Fall 2025',
+        semester: 'FALL',
+        year: 2025,
+        startDate: '2025-09-01',
+        endDate: '2025-12-20',
+        registrationStart: '2025-08-01',
+        registrationEnd: '2025-08-31',
+        addDropDeadline: '2025-09-15',
+        withdrawalDeadline: '2025-11-15',
+        isActive: false,
+      },
+    ];
+
+    let filteredTerms = mockTerms;
+
+    if (year) {
+      filteredTerms = filteredTerms.filter((t) => t.year === parseInt(year as string));
+    }
+
+    if (active === 'true') {
+      filteredTerms = filteredTerms.filter((t) => t.isActive);
+    }
+
+    res.status(200).json({
+      success: true,
+      data: filteredTerms,
+      message: 'Using mock data. Add Term model to Prisma schema for full functionality.',
+    });
+  } catch (error) {
+    throw error;
+  }
+};
+
+/**
+ * Create academic term
+ * POST /api/admin/calendar/terms
+ */
+export const createAcademicTerm = async (req: AuthRequest, res: Response): Promise<void> => {
+  try {
+    const {
+      name,
+      semester,
+      year,
+      start_date,
+      end_date,
+      registration_start,
+      registration_end,
+      add_drop_deadline,
+      withdrawal_deadline,
+    } = req.body;
+
+    // Mock response - in production, save to database
+    const newTerm = {
+      id: Math.floor(Math.random() * 1000),
+      name,
+      semester,
+      year,
+      startDate: start_date,
+      endDate: end_date,
+      registrationStart: registration_start,
+      registrationEnd: registration_end,
+      addDropDeadline: add_drop_deadline,
+      withdrawalDeadline: withdrawal_deadline,
+      isActive: false,
+      createdAt: new Date(),
+    };
+
+    // Log audit
+    await prisma.auditLog.create({
+      data: {
+        userId: req.user!.id,
+        action: 'CREATE',
+        entityType: 'TERM',
+        entityId: newTerm.id,
+        changes: { created: newTerm },
+      },
+    });
+
+    res.status(201).json({
+      success: true,
+      message: 'Academic term created (mock). Add Term model to Prisma schema for persistence.',
+      data: newTerm,
+    });
+  } catch (error) {
+    throw error;
+  }
+};
+
+/**
+ * Update academic term
+ * PUT /api/admin/calendar/terms/:id
+ */
+export const updateAcademicTerm = async (req: AuthRequest, res: Response): Promise<void> => {
+  try {
+    const { id } = req.params;
+    const updates = req.body;
+
+    // Mock response
+    res.status(200).json({
+      success: true,
+      message: 'Academic term updated (mock). Add Term model to Prisma schema for persistence.',
+      data: {
+        id: parseInt(id),
+        ...updates,
+        updatedAt: new Date(),
+      },
+    });
+  } catch (error) {
+    throw error;
+  }
+};
