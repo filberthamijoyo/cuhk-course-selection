@@ -78,6 +78,7 @@ CREATE TABLE time_slots (
     start_time TIME NOT NULL,
     end_time TIME NOT NULL,
     location VARCHAR(100) NOT NULL,
+    type VARCHAR(20) NOT NULL DEFAULT 'LECTURE' CHECK (type IN ('LECTURE', 'TUTORIAL')),
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     CHECK (end_time > start_time)

@@ -410,6 +410,7 @@ model time_slots {
   start_time  String
   end_time    String
   location    String?
+  type        String?   @default("LECTURE") @db.VarChar(20)
   courses     courses   @relation(fields: [course_id], references: [id], onDelete: Cascade)
 
   @@index([course_id])

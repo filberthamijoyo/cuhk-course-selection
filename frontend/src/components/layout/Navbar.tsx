@@ -1,7 +1,7 @@
-import { Link, useLocation } from 'react-router-dom';
+import { Link } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 import { ThemeToggle } from '../ui/ThemeToggle';
-import { Menu, X, GraduationCap, ChevronDown, LogOut, User } from 'lucide-react';
+import { Menu, GraduationCap, ChevronDown, LogOut, User } from 'lucide-react';
 import { Fragment } from 'react';
 import { cn } from '../../lib/utils';
 import { Menu as HeadlessMenu, Transition } from '@headlessui/react';
@@ -13,19 +13,6 @@ interface NavbarProps {
 
 export function Navbar({ onMenuClick, isSidebarOpen }: NavbarProps) {
   const { user, logout } = useAuth();
-  const location = useLocation();
-
-  const isActive = (path: string) => {
-    return location.pathname === path || location.pathname.startsWith(path + '/');
-  };
-
-  // Main navigation items (visible on desktop)
-  const mainNavItems = [
-    { path: '/', label: 'Dashboard' },
-    { path: '/courses', label: 'Courses' },
-    { path: '/enrollments', label: 'My Enrollments' },
-    { path: '/planning', label: 'Planning' },
-  ];
 
   return (
     <nav className="sticky top-0 z-40 w-full navbar-glass shadow-lg shadow-black/[0.03]">
@@ -52,23 +39,7 @@ export function Navbar({ onMenuClick, isSidebarOpen }: NavbarProps) {
               </div>
             </Link>
 
-            {/* Desktop Navigation */}
-            <div className="hidden lg:flex items-center gap-1">
-              {mainNavItems.map((item) => (
-                <Link
-                  key={item.path}
-                  to={item.path}
-                  className={cn(
-                    'px-4 py-2 rounded-xl text-sm font-semibold transition-all duration-200',
-                    isActive(item.path)
-                      ? 'bg-primary/10 text-primary shadow-sm'
-                      : 'text-muted-foreground hover:bg-accent/50 hover:text-foreground'
-                  )}
-                >
-                  {item.label}
-                </Link>
-              ))}
-            </div>
+            {/* Desktop Navigation - Removed */}
           </div>
 
           {/* Right section: Theme toggle and user menu */}

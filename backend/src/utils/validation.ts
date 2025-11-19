@@ -211,6 +211,10 @@ export const courseCreateSchema = Joi.object<CourseCreateRequest>({
         location: Joi.string()
           .max(100)
           .required(),
+        type: Joi.string()
+          .valid('LECTURE', 'TUTORIAL')
+          .optional()
+          .default('LECTURE'),
       })
     )
     .min(1)

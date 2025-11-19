@@ -85,6 +85,7 @@ model TimeSlot {
   startTime String    @map("start_time")
   endTime   String    @map("end_time")
   location  String?
+  type      String?   @default("LECTURE") // LECTURE or TUTORIAL
   course    Course    @relation(fields: [courseId], references: [id], onDelete: Cascade)
 
   @@index([courseId])

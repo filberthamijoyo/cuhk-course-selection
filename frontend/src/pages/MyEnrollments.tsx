@@ -232,7 +232,7 @@ export function MyEnrollments() {
                       <ChevronRight className="w-4 h-4 ml-auto" />
                     </Link>
                   ))}
-                </div>
+              </div>
               </div>
             </div>
           </div>
@@ -308,7 +308,7 @@ export function MyEnrollments() {
               Applications
             </button>
           </nav>
-        </div>
+          </div>
 
         {/* My Courses Tab */}
         {activeTab === 'enrollments' && (
@@ -316,30 +316,30 @@ export function MyEnrollments() {
             {/* Summary Cards */}
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
               <div className="bg-white dark:bg-gray-800 rounded-xl p-6 border border-gray-200 dark:border-gray-700">
-                <div className="flex items-center justify-between">
-                  <div>
+            <div className="flex items-center justify-between">
+              <div>
                     <p className="text-sm text-gray-600 dark:text-gray-400 font-medium">Enrolled Courses</p>
                     <p className="text-3xl font-bold text-gray-900 dark:text-white mt-1">
                       {confirmedEnrollments.length}
                     </p>
-                  </div>
+              </div>
                   <div className="bg-green-100 dark:bg-green-950 p-3 rounded-lg">
                     <BookOpen className="w-6 h-6 text-green-600" />
-                  </div>
-                </div>
               </div>
+            </div>
+          </div>
 
               <div className="bg-white dark:bg-gray-800 rounded-xl p-6 border border-gray-200 dark:border-gray-700">
-                <div className="flex items-center justify-between">
-                  <div>
+            <div className="flex items-center justify-between">
+              <div>
                     <p className="text-sm text-gray-600 dark:text-gray-400 font-medium">Total Credits</p>
                     <p className="text-3xl font-bold text-gray-900 dark:text-white mt-1">{totalCredits}</p>
-                  </div>
+              </div>
                   <div className="bg-blue-100 dark:bg-blue-950 p-3 rounded-lg">
                     <Users className="w-6 h-6 text-blue-600" />
-                  </div>
-                </div>
-              </div>
+            </div>
+          </div>
+        </div>
 
               <div className="bg-white dark:bg-gray-800 rounded-xl p-6 border border-gray-200 dark:border-gray-700">
                 <div className="flex items-center justify-between">
@@ -347,8 +347,8 @@ export function MyEnrollments() {
                     <p className="text-sm text-gray-600 dark:text-gray-400 font-medium">Waitlisted</p>
                     <p className="text-3xl font-bold text-gray-900 dark:text-white mt-1">
                       {waitlistedEnrollments.length}
-                    </p>
-                  </div>
+                          </p>
+                        </div>
                   <div className="bg-yellow-100 dark:bg-yellow-950 p-3 rounded-lg">
                     <Clock className="w-6 h-6 text-yellow-600" />
                   </div>
@@ -360,62 +360,62 @@ export function MyEnrollments() {
             {confirmedEnrollments.length > 0 ? (
               <div>
                 <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">Enrolled Courses</h3>
-                <div className="space-y-4">
-                  {confirmedEnrollments.map((enrollment) => (
+            <div className="space-y-4">
+              {confirmedEnrollments.map((enrollment) => (
                     <div
                       key={enrollment.id}
                       className="bg-white dark:bg-gray-800 rounded-xl p-6 border border-gray-200 dark:border-gray-700"
                     >
-                      <div className="flex justify-between items-start">
-                        <div className="flex-1">
-                          <div className="flex items-center gap-3 mb-2">
+                  <div className="flex justify-between items-start">
+                    <div className="flex-1">
+                      <div className="flex items-center gap-3 mb-2">
                             <h4 className="text-xl font-bold text-gray-900 dark:text-white">
-                              {enrollment.course.courseCode}
-                            </h4>
+                          {enrollment.course.courseCode}
+                        </h4>
                             <span className="px-3 py-1 bg-green-100 dark:bg-green-950 text-green-700 dark:text-green-400 text-xs font-semibold rounded-full">
-                              Enrolled
-                            </span>
+                          Enrolled
+                        </span>
                             <span className="px-3 py-1 bg-blue-100 dark:bg-blue-950 text-blue-700 dark:text-blue-400 text-xs font-semibold rounded-full">
-                              {enrollment.course.credits} Credits
-                            </span>
-                          </div>
+                          {enrollment.course.credits} Credits
+                        </span>
+                      </div>
                           <p className="text-lg text-gray-700 dark:text-gray-300 mb-3">
-                            {enrollment.course.courseName}
-                          </p>
+                        {enrollment.course.courseName}
+                      </p>
                           <div className="grid grid-cols-1 md:grid-cols-2 gap-3 text-sm text-gray-600 dark:text-gray-400">
                             <div>
-                              <span className="font-medium">Instructor:</span>{' '}
+                          <span className="font-medium">Instructor:</span>{' '}
                               {enrollment.course.instructor?.fullName || 'TBA'}
                             </div>
                             <div>
                               <span className="font-medium">Department:</span> {enrollment.course.department}
                             </div>
-                          </div>
-                        </div>
-                        <button
-                          onClick={() => handleDrop(enrollment.id)}
-                          disabled={dropMutation.isPending}
-                          className="ml-4 px-4 py-2 bg-red-50 dark:bg-red-950 text-red-600 dark:text-red-400 hover:bg-red-100 dark:hover:bg-red-900 rounded-lg font-medium transition-colors"
-                        >
-                          Drop Course
-                        </button>
                       </div>
+                    </div>
+                    <button
+                      onClick={() => handleDrop(enrollment.id)}
+                      disabled={dropMutation.isPending}
+                          className="ml-4 px-4 py-2 bg-red-50 dark:bg-red-950 text-red-600 dark:text-red-400 hover:bg-red-100 dark:hover:bg-red-900 rounded-lg font-medium transition-colors"
+                    >
+                      Drop Course
+                    </button>
+                  </div>
 
-                      {dropMessage?.enrollmentId === enrollment.id && (
-                        <div
+                  {dropMessage?.enrollmentId === enrollment.id && (
+                    <div
                           className={`mt-4 px-4 py-2 rounded-lg text-sm ${
-                            dropMessage.message.includes('Success')
+                        dropMessage.message.includes('Success')
                               ? 'bg-green-50 dark:bg-green-950 text-green-800 dark:text-green-400 border border-green-200 dark:border-green-800'
                               : 'bg-red-50 dark:bg-red-950 text-red-800 dark:text-red-400 border border-red-200 dark:border-red-800'
-                          }`}
-                        >
-                          {dropMessage.message}
-                        </div>
-                      )}
+                      }`}
+                    >
+                      {dropMessage.message}
                     </div>
-                  ))}
+                  )}
                 </div>
-              </div>
+              ))}
+            </div>
+          </div>
             ) : (
               <div className="bg-white dark:bg-gray-800 rounded-xl p-12 border border-gray-200 dark:border-gray-700 text-center">
                 <BookOpen className="w-16 h-16 text-gray-300 dark:text-gray-600 mx-auto mb-4" />
@@ -430,48 +430,48 @@ export function MyEnrollments() {
                   Browse Courses
                 </button>
               </div>
-            )}
+        )}
 
-            {/* Waitlisted Courses */}
-            {waitlistedEnrollments.length > 0 && (
+        {/* Waitlisted Courses */}
+        {waitlistedEnrollments.length > 0 && (
               <div>
                 <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">Waitlisted Courses</h3>
-                <div className="space-y-4">
-                  {waitlistedEnrollments.map((enrollment) => (
+            <div className="space-y-4">
+              {waitlistedEnrollments.map((enrollment) => (
                     <div
                       key={enrollment.id}
                       className="bg-yellow-50 dark:bg-yellow-950/30 rounded-xl p-6 border border-yellow-200 dark:border-yellow-800"
                     >
-                      <div className="flex justify-between items-start">
-                        <div className="flex-1">
-                          <div className="flex items-center gap-3 mb-2">
+                  <div className="flex justify-between items-start">
+                    <div className="flex-1">
+                      <div className="flex items-center gap-3 mb-2">
                             <h4 className="text-xl font-bold text-gray-900 dark:text-white">
-                              {enrollment.course.courseCode}
-                            </h4>
+                          {enrollment.course.courseCode}
+                        </h4>
                             <span className="px-3 py-1 bg-yellow-100 dark:bg-yellow-900 text-yellow-700 dark:text-yellow-300 text-xs font-semibold rounded-full">
-                              Waitlisted
-                            </span>
-                          </div>
-                          <p className="text-lg text-gray-700 dark:text-gray-300 mb-2">
-                            {enrollment.course.courseName}
-                          </p>
-                          <p className="text-sm text-yellow-700 dark:text-yellow-400">
-                            You will be automatically enrolled when a seat becomes available.
-                          </p>
-                        </div>
-                        <button
-                          onClick={() => handleDrop(enrollment.id)}
-                          disabled={dropMutation.isPending}
-                          className="ml-4 px-4 py-2 bg-red-50 dark:bg-red-950 text-red-600 dark:text-red-400 hover:bg-red-100 dark:hover:bg-red-900 rounded-lg font-medium transition-colors"
-                        >
-                          Leave Waitlist
-                        </button>
+                          Waitlisted
+                        </span>
                       </div>
+                          <p className="text-lg text-gray-700 dark:text-gray-300 mb-2">
+                        {enrollment.course.courseName}
+                      </p>
+                          <p className="text-sm text-yellow-700 dark:text-yellow-400">
+                        You will be automatically enrolled when a seat becomes available.
+                      </p>
                     </div>
-                  ))}
+                    <button
+                      onClick={() => handleDrop(enrollment.id)}
+                      disabled={dropMutation.isPending}
+                          className="ml-4 px-4 py-2 bg-red-50 dark:bg-red-950 text-red-600 dark:text-red-400 hover:bg-red-100 dark:hover:bg-red-900 rounded-lg font-medium transition-colors"
+                    >
+                      Leave Waitlist
+                    </button>
+                  </div>
                 </div>
-              </div>
-            )}
+              ))}
+            </div>
+          </div>
+        )}
           </div>
         )}
 

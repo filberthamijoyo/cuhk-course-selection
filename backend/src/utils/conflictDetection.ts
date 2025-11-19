@@ -2,13 +2,22 @@ import { pool } from '../config/database';
 import { TimeSlot } from '../types/course.types';
 import { EnrollmentConflict, EnrollmentValidationResult } from '../types/enrollment.types';
 
-/**
- * Check if two time slots overlap
- */
+const isSchedulableSlot = (slot: TimeSlot): boolean => {
+  if (!slot.type) {
+    return true;
+  }
+  const normalized = slot.type.toUpperCase();
+  return normalized === 'LECTURE' || normalized === 'TUTORIAL';
+};
+
 export const doTimeSlotsOverlap = (
   slot1: TimeSlot,
   slot2: TimeSlot
 ): boolean => {
+  if (!isSchedulableSlot(slot1) || !isSchedulableSlot(slot2)) {
+    return false;
+  }
+
   // Check if they are on the same day
   if (slot1.day_of_week !== slot2.day_of_week) {
     return false;

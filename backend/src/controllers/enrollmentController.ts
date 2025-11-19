@@ -74,6 +74,7 @@ export async function dropCourse(req: AuthRequest, res: Response): Promise<void>
 /**
  * Get my enrollments
  * GET /api/enrollments/my-courses
+ * Query params: currentTerm (boolean) - if true, only return current term enrollments
  */
 export async function getMyEnrollments(req: AuthRequest, res: Response): Promise<void> {
   try {
@@ -87,7 +88,12 @@ export async function getMyEnrollments(req: AuthRequest, res: Response): Promise
       return;
     }
 
-    const enrollments = await enrollmentService.getUserEnrollments(userId);
+    // Check if we should filter by current term
+    const currentTermOnly = req.query.currentTerm === 'true' || req.query.currentTerm === true;
+    
+    const enrollments = currentTermOnly
+      ? await enrollmentService.getCurrentTermEnrollments(userId)
+      : await enrollmentService.getUserEnrollments(userId);
 
     res.status(200).json({
       success: true,

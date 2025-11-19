@@ -46,9 +46,12 @@ export function DegreeAudit() {
     return styles[status as keyof typeof styles] || styles.NOT_STARTED;
   };
 
-  const getProgressPercentage = (earned: number, required: number) => {
-    return Math.min((earned / required) * 100, 100);
-  };
+const getProgressPercentage = (earned: number, required: number) => {
+  if (!required || required <= 0) {
+    return earned > 0 ? 100 : 0;
+  }
+  return Math.min((earned / required) * 100, 100);
+};
 
   if (isLoading) {
     return (
@@ -58,7 +61,15 @@ export function DegreeAudit() {
     );
   }
 
-  const requirements: DegreeRequirement[] = auditData?.requirements || [];
+const requirements: DegreeRequirement[] = (auditData?.requirements || []).map(req => ({
+  ...req,
+  status: req.status || 'NOT_STARTED',
+  courses: {
+    completed: req.courses?.completed || [],
+    inProgress: req.courses?.inProgress || [],
+    needed: req.courses?.needed || [],
+  },
+}));
   const overallProgress = auditData?.overallProgress || {
     totalRequired: 120,
     totalEarned: 0,
