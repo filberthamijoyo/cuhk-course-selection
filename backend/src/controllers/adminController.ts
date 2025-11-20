@@ -33,7 +33,7 @@ export const createCourse = async (req: AuthRequest, res: Response): Promise<voi
     }: CourseCreateRequest = req.body;
 
     // Check if course code already exists for this semester/year
-    const existing = await prisma.course.findFirst({
+    const existing = await prisma.courses.findFirst({
       where: {
         courseCode: course_code,
         semester,
@@ -46,7 +46,7 @@ export const createCourse = async (req: AuthRequest, res: Response): Promise<voi
     }
 
     // Create course with time slots
-    const course = await prisma.course.create({
+    const course = await prisma.courses.create({
       data: {
         courseCode: course_code,
         courseName: course_name,
@@ -113,7 +113,7 @@ export const updateCourse = async (req: AuthRequest, res: Response): Promise<voi
       throw new BadRequestError('No fields to update');
     }
 
-    const course = await prisma.course.update({
+    const course = await prisma.courses.update({
       where: { id: parseInt(id) },
       data: updateData,
       include: {
@@ -150,7 +150,7 @@ export const deleteCourse = async (req: AuthRequest, res: Response): Promise<voi
     const { id } = req.params;
 
     // Check if course has active enrollments
-    const enrollmentCount = await prisma.enrollment.count({
+    const enrollmentCount = await prisma.enrollments.count({
       where: {
         courseId: parseInt(id),
         status: EnrollmentStatus.CONFIRMED,
@@ -162,7 +162,7 @@ export const deleteCourse = async (req: AuthRequest, res: Response): Promise<voi
     }
 
     // Soft delete by updating status
-    await prisma.course.update({
+      await prisma.courses.update({
       where: { id: parseInt(id) },
       data: { status: CourseStatus.INACTIVE },
     });
@@ -187,7 +187,7 @@ export const getCourseEnrollments = async (req: AuthRequest, res: Response): Pro
   try {
     const { id } = req.params;
 
-    const enrollments = await prisma.enrollment.findMany({
+    const enrollments = await prisma.enrollments.findMany({
       where: {
         courseId: parseInt(id),
         status: {
@@ -301,7 +301,7 @@ export const getStudents = async (req: AuthRequest, res: Response): Promise<void
     }
 
     const [students, total] = await Promise.all([
-      prisma.student.findMany({
+      prisma.students.findMany({
         where,
         skip,
         take,
@@ -329,7 +329,7 @@ export const getStudents = async (req: AuthRequest, res: Response): Promise<void
           [sortBy as string]: sortOrder as 'asc' | 'desc',
         },
       }),
-      prisma.student.count({ where }),
+      prisma.students.count({ where }),
     ]);
 
     res.status(200).json({
@@ -355,7 +355,7 @@ export const getStudentById = async (req: AuthRequest, res: Response): Promise<v
   try {
     const { id } = req.params;
 
-    const student = await prisma.student.findUnique({
+    const student = await prisma.students.findUnique({
       where: { id: parseInt(id) },
       include: {
         user: {
@@ -389,7 +389,7 @@ export const getStudentById = async (req: AuthRequest, res: Response): Promise<v
     }
 
     // Calculate GPA
-    const grades = await prisma.grade.findMany({
+    const grades = await prisma.grades.findMany({
       where: {
         enrollment: {
           userId: student.userId,
@@ -467,7 +467,7 @@ export const createStudent = async (req: AuthRequest, res: Response): Promise<vo
     } = req.body;
 
     // Check if email or student ID already exists
-    const existingUser = await prisma.user.findFirst({
+    const existingUser = await prisma.users.findFirst({
       where: {
         OR: [
           { email },
@@ -536,7 +536,7 @@ export const createStudent = async (req: AuthRequest, res: Response): Promise<vo
     });
 
     // Log audit
-    await prisma.auditLog.create({
+    await prisma.audit_logs.create({
       data: {
         userId: req.user!.id,
         action: 'CREATE',
@@ -565,7 +565,7 @@ export const updateStudent = async (req: AuthRequest, res: Response): Promise<vo
     const { id } = req.params;
     const updates = req.body;
 
-    const student = await prisma.student.findUnique({
+    const student = await prisma.students.findUnique({
       where: { id: parseInt(id) },
     });
 
@@ -585,7 +585,7 @@ export const updateStudent = async (req: AuthRequest, res: Response): Promise<vo
     if (updates.full_name) userUpdateData.fullName = updates.full_name;
     if (updates.email) userUpdateData.email = updates.email;
 
-    const updatedStudent = await prisma.student.update({
+    const updatedStudent = await prisma.students.update({
       where: { id: parseInt(id) },
       data: {
         ...updateData,
@@ -607,7 +607,7 @@ export const updateStudent = async (req: AuthRequest, res: Response): Promise<vo
     });
 
     // Log audit
-    await prisma.auditLog.create({
+    await prisma.audit_logs.create({
       data: {
         userId: req.user!.id,
         action: 'UPDATE',
@@ -636,7 +636,7 @@ export const updateStudentStatus = async (req: AuthRequest, res: Response): Prom
     const { id } = req.params;
     const { status, reason, effective_date } = req.body;
 
-    const student = await prisma.student.findUnique({
+    const student = await prisma.students.findUnique({
       where: { id: parseInt(id) },
     });
 
@@ -646,7 +646,7 @@ export const updateStudentStatus = async (req: AuthRequest, res: Response): Prom
 
     // If status is WITHDRAWN, drop all active enrollments
     if (status === StudentStatus.WITHDRAWN) {
-      await prisma.enrollment.updateMany({
+      await prisma.enrollments.updateMany({
         where: {
           userId: student.userId,
           status: EnrollmentStatus.CONFIRMED,
@@ -657,7 +657,7 @@ export const updateStudentStatus = async (req: AuthRequest, res: Response): Prom
       });
     }
 
-    const updatedStudent = await prisma.student.update({
+    const updatedStudent = await prisma.students.update({
       where: { id: parseInt(id) },
       data: {
         status: status as StudentStatus,
@@ -669,7 +669,7 @@ export const updateStudentStatus = async (req: AuthRequest, res: Response): Prom
     });
 
     // Log audit
-    await prisma.auditLog.create({
+    await prisma.audit_logs.create({
       data: {
         userId: req.user!.id,
         action: 'STATUS_CHANGE',
@@ -702,7 +702,7 @@ export const deleteStudent = async (req: AuthRequest, res: Response): Promise<vo
   try {
     const { id } = req.params;
 
-    const student = await prisma.student.findUnique({
+    const student = await prisma.students.findUnique({
       where: { id: parseInt(id) },
     });
 
@@ -711,7 +711,7 @@ export const deleteStudent = async (req: AuthRequest, res: Response): Promise<vo
     }
 
     // Update status to withdrawn instead of deleting
-    await prisma.student.update({
+    await prisma.students.update({
       where: { id: parseInt(id) },
       data: {
         status: StudentStatus.WITHDRAWN,
@@ -719,7 +719,7 @@ export const deleteStudent = async (req: AuthRequest, res: Response): Promise<vo
     });
 
     // Log audit
-    await prisma.auditLog.create({
+    await prisma.audit_logs.create({
       data: {
         userId: req.user!.id,
         action: 'DELETE',
@@ -775,7 +775,7 @@ export const getEnrollments = async (req: AuthRequest, res: Response): Promise<v
     }
 
     const [enrollments, total] = await Promise.all([
-      prisma.enrollment.findMany({
+      prisma.enrollments.findMany({
         where,
         skip,
         take,
@@ -812,7 +812,7 @@ export const getEnrollments = async (req: AuthRequest, res: Response): Promise<v
           enrolledAt: 'desc',
         },
       }),
-      prisma.enrollment.count({ where }),
+      prisma.enrollments.count({ where }),
     ]);
 
     res.status(200).json({
@@ -836,7 +836,7 @@ export const getEnrollments = async (req: AuthRequest, res: Response): Promise<v
  */
 export const getPendingEnrollments = async (req: AuthRequest, res: Response): Promise<void> => {
   try {
-    const enrollments = await prisma.enrollment.findMany({
+    const enrollments = await prisma.enrollments.findMany({
       where: {
         status: EnrollmentStatus.PENDING,
       },
@@ -890,7 +890,7 @@ export const approveEnrollment = async (req: AuthRequest, res: Response): Promis
     const { id } = req.params;
     const { notes } = req.body;
 
-    const enrollment = await prisma.enrollment.findUnique({
+    const enrollment = await prisma.enrollments.findUnique({
       where: { id: parseInt(id) },
       include: {
         course: true,
@@ -934,7 +934,7 @@ export const approveEnrollment = async (req: AuthRequest, res: Response): Promis
     });
 
     // Log audit
-    await prisma.auditLog.create({
+    await prisma.audit_logs.create({
       data: {
         userId: req.user!.id,
         action: 'APPROVE',
@@ -971,7 +971,7 @@ export const rejectEnrollment = async (req: AuthRequest, res: Response): Promise
       throw new BadRequestError('Rejection reason is required');
     }
 
-    const enrollment = await prisma.enrollment.findUnique({
+    const enrollment = await prisma.enrollments.findUnique({
       where: { id: parseInt(id) },
     });
 
@@ -983,7 +983,7 @@ export const rejectEnrollment = async (req: AuthRequest, res: Response): Promise
       throw new BadRequestError('Enrollment is not in pending status');
     }
 
-    const updatedEnrollment = await prisma.enrollment.update({
+    const updatedEnrollment = await prisma.enrollments.update({
       where: { id: parseInt(id) },
       data: {
         status: EnrollmentStatus.REJECTED,
@@ -995,7 +995,7 @@ export const rejectEnrollment = async (req: AuthRequest, res: Response): Promise
     });
 
     // Log audit
-    await prisma.auditLog.create({
+    await prisma.audit_logs.create({
       data: {
         userId: req.user!.id,
         action: 'REJECT',
@@ -1038,7 +1038,7 @@ export const bulkApproveEnrollments = async (req: AuthRequest, res: Response): P
 
     for (const enrollmentId of enrollment_ids) {
       try {
-        const enrollment = await prisma.enrollment.findUnique({
+        const enrollment = await prisma.enrollments.findUnique({
           where: { id: enrollmentId },
           include: { course: true },
         });
@@ -1077,7 +1077,7 @@ export const bulkApproveEnrollments = async (req: AuthRequest, res: Response): P
     }
 
     // Log audit
-    await prisma.auditLog.create({
+    await prisma.audit_logs.create({
       data: {
         userId: req.user!.id,
         action: 'BULK_APPROVE',
@@ -1106,7 +1106,7 @@ export const dropEnrollment = async (req: AuthRequest, res: Response): Promise<v
     const { id } = req.params;
     const { reason } = req.body;
 
-    const enrollment = await prisma.enrollment.findUnique({
+    const enrollment = await prisma.enrollments.findUnique({
       where: { id: parseInt(id) },
       include: { course: true },
     });
@@ -1132,7 +1132,7 @@ export const dropEnrollment = async (req: AuthRequest, res: Response): Promise<v
     });
 
     // Log audit
-    await prisma.auditLog.create({
+    await prisma.audit_logs.create({
       data: {
         userId: req.user!.id,
         action: 'DROP',
@@ -1160,7 +1160,7 @@ export const createEnrollment = async (req: AuthRequest, res: Response): Promise
     const { user_id, course_id, force = false } = req.body;
 
     // Check if enrollment already exists
-    const existing = await prisma.enrollment.findUnique({
+    const existing = await prisma.enrollments.findUnique({
       where: {
         userId_courseId: {
           userId: user_id,
@@ -1173,7 +1173,7 @@ export const createEnrollment = async (req: AuthRequest, res: Response): Promise
       throw new ConflictError('Student is already enrolled in this course');
     }
 
-    const course = await prisma.course.findUnique({
+    const course = await prisma.courses.findUnique({
       where: { id: course_id },
     });
 
@@ -1214,7 +1214,7 @@ export const createEnrollment = async (req: AuthRequest, res: Response): Promise
     });
 
     // Log audit
-    await prisma.auditLog.create({
+    await prisma.audit_logs.create({
       data: {
         userId: req.user!.id,
         action: 'CREATE',
@@ -1246,7 +1246,7 @@ export const createEnrollment = async (req: AuthRequest, res: Response): Promise
  */
 export const getPendingGrades = async (req: AuthRequest, res: Response): Promise<void> => {
   try {
-    const grades = await prisma.grade.findMany({
+    const grades = await prisma.grades.findMany({
       where: {
         status: GradeStatus.SUBMITTED,
       },
@@ -1308,7 +1308,7 @@ export const approveGrade = async (req: AuthRequest, res: Response): Promise<voi
     const { id } = req.params;
     const { comments } = req.body;
 
-    const grade = await prisma.grade.findUnique({
+    const grade = await prisma.grades.findUnique({
       where: { id: parseInt(id) },
     });
 
@@ -1320,7 +1320,7 @@ export const approveGrade = async (req: AuthRequest, res: Response): Promise<voi
       throw new BadRequestError('Grade is not in submitted status');
     }
 
-    const updatedGrade = await prisma.grade.update({
+    const updatedGrade = await prisma.grades.update({
       where: { id: parseInt(id) },
       data: {
         status: GradeStatus.APPROVED,
@@ -1339,7 +1339,7 @@ export const approveGrade = async (req: AuthRequest, res: Response): Promise<voi
     });
 
     // Log audit
-    await prisma.auditLog.create({
+    await prisma.audit_logs.create({
       data: {
         userId: req.user!.id,
         action: 'APPROVE',
@@ -1375,7 +1375,7 @@ export const bulkApproveGrades = async (req: AuthRequest, res: Response): Promis
       throw new BadRequestError('grade_ids must be a non-empty array');
     }
 
-    const updated = await prisma.grade.updateMany({
+    const updated = await prisma.grades.updateMany({
       where: {
         id: { in: grade_ids },
         status: GradeStatus.SUBMITTED,
@@ -1388,7 +1388,7 @@ export const bulkApproveGrades = async (req: AuthRequest, res: Response): Promis
     });
 
     // Log audit
-    await prisma.auditLog.create({
+    await prisma.audit_logs.create({
       data: {
         userId: req.user!.id,
         action: 'BULK_APPROVE',
@@ -1430,7 +1430,7 @@ export const publishGrades = async (req: AuthRequest, res: Response): Promise<vo
       throw new BadRequestError('Either grade_ids or course_id must be provided');
     }
 
-    const updated = await prisma.grade.updateMany({
+    const updated = await prisma.grades.updateMany({
       where,
       data: {
         status: GradeStatus.PUBLISHED,
@@ -1438,7 +1438,7 @@ export const publishGrades = async (req: AuthRequest, res: Response): Promise<vo
     });
 
     // Log audit
-    await prisma.auditLog.create({
+    await prisma.audit_logs.create({
       data: {
         userId: req.user!.id,
         action: 'PUBLISH',
@@ -1490,7 +1490,7 @@ export const getAllUsers = async (req: AuthRequest, res: Response): Promise<void
     }
 
     const [users, total] = await Promise.all([
-      prisma.user.findMany({
+      prisma.users.findMany({
         where,
         skip,
         take,
@@ -1505,7 +1505,7 @@ export const getAllUsers = async (req: AuthRequest, res: Response): Promise<void
           department: true,
           createdAt: true,
           updatedAt: true,
-          student: {
+          students_students_user_idTousers: {
             select: {
               studentId: true,
               status: true,
@@ -1522,12 +1522,23 @@ export const getAllUsers = async (req: AuthRequest, res: Response): Promise<void
           createdAt: 'desc',
         },
       }),
-      prisma.user.count({ where }),
+      prisma.users.count({ where }),
     ]);
+
+    // Transform to match frontend expectations
+    const transformedUsers = users.map((user) => ({
+      ...user,
+      student: user.students_students_user_idTousers
+        ? {
+            studentId: user.students_students_user_idTousers.studentId,
+            status: user.students_students_user_idTousers.status,
+          }
+        : null,
+    }));
 
     res.status(200).json({
       success: true,
-      data: users,
+      data: transformedUsers.map(({ students_students_user_idTousers, ...rest }) => rest),
       metadata: {
         page: Number(page),
         perPage: Number(limit),
@@ -1535,7 +1546,13 @@ export const getAllUsers = async (req: AuthRequest, res: Response): Promise<void
         totalPages: Math.ceil(total / Number(limit)),
       },
     });
-  } catch (error) {
+  } catch (error: any) {
+    console.error('Error in getAllUsers:', error);
+    // If it's a Prisma error, provide more details
+    if (error.code) {
+      console.error('Prisma error code:', error.code);
+      console.error('Prisma error message:', error.message);
+    }
     throw error;
   }
 };
@@ -1564,16 +1581,16 @@ export const getSystemStatistics = async (_req: AuthRequest, res: Response): Pro
       pendingEnrollments,
       pendingGrades,
     ] = await Promise.all([
-      prisma.user.count({ where: { role: 'STUDENT' } }),
-      prisma.user.count({ where: { role: 'INSTRUCTOR' } }),
-      prisma.user.count({ where: { role: 'ADMINISTRATOR' } }),
-      prisma.course.count(),
-      prisma.course.count({ where: { status: CourseStatus.ACTIVE } }),
-      prisma.enrollment.count(),
-      prisma.enrollment.count({ where: { status: EnrollmentStatus.CONFIRMED } }),
-      prisma.enrollment.count({ where: { status: EnrollmentStatus.WAITLISTED } }),
-      prisma.enrollment.count({ where: { status: EnrollmentStatus.PENDING } }),
-      prisma.grade.count({ where: { status: GradeStatus.SUBMITTED } }),
+      prisma.users.count({ where: { role: 'STUDENT' } }),
+      prisma.users.count({ where: { role: 'INSTRUCTOR' } }),
+      prisma.users.count({ where: { role: 'ADMINISTRATOR' } }),
+      prisma.courses.count(),
+      prisma.courses.count({ where: { status: CourseStatus.ACTIVE } }),
+      prisma.enrollments.count(),
+      prisma.enrollments.count({ where: { status: EnrollmentStatus.CONFIRMED } }),
+      prisma.enrollments.count({ where: { status: EnrollmentStatus.WAITLISTED } }),
+      prisma.enrollments.count({ where: { status: EnrollmentStatus.PENDING } }),
+      prisma.grades.count({ where: { status: GradeStatus.SUBMITTED } }),
     ]);
 
     res.status(200).json({
@@ -1622,14 +1639,14 @@ export const getEnrollmentStatistics = async (req: AuthRequest, res: Response): 
       if (year) where.course.year = parseInt(year as string);
     }
 
-    const enrollments = await prisma.enrollment.groupBy({
+    const enrollments = await prisma.enrollments.groupBy({
       by: ['courseId'],
       where,
       _count: true,
     });
 
     const courseIds = enrollments.map((e) => e.courseId);
-    const courses = await prisma.course.findMany({
+    const courses = await prisma.courses.findMany({
       where: { id: { in: courseIds } },
       select: {
         id: true,
@@ -1687,7 +1704,7 @@ export const getGradeStatistics = async (req: AuthRequest, res: Response): Promi
       if (year) where.enrollment.course.year = parseInt(year as string);
     }
 
-    const grades = await prisma.grade.groupBy({
+    const grades = await prisma.grades.groupBy({
       by: ['letterGrade'],
       where,
       _count: true,
@@ -1725,7 +1742,7 @@ export const getCourseWaitlist = async (req: AuthRequest, res: Response): Promis
   try {
     const { id } = req.params;
 
-    const waitlist = await prisma.enrollment.findMany({
+    const waitlist = await prisma.enrollments.findMany({
       where: {
         courseId: parseInt(id),
         status: EnrollmentStatus.WAITLISTED,
@@ -1769,7 +1786,7 @@ export const promoteFromWaitlist = async (req: AuthRequest, res: Response): Prom
   try {
     const { id } = req.params;
 
-    const enrollment = await prisma.enrollment.findUnique({
+    const enrollment = await prisma.enrollments.findUnique({
       where: { id: parseInt(id) },
       include: { course: true },
     });
@@ -1808,7 +1825,7 @@ export const promoteFromWaitlist = async (req: AuthRequest, res: Response): Prom
     });
 
     // Log audit
-    await prisma.auditLog.create({
+    await prisma.audit_logs.create({
       data: {
         userId: req.user!.id,
         action: 'PROMOTE',
@@ -1850,7 +1867,7 @@ export const checkConflicts = async (req: AuthRequest, res: Response): Promise<v
     }
 
     // Get all courses with time slots
-    const courses = await prisma.course.findMany({
+    const courses = await prisma.courses.findMany({
       where: {
         id: { in: course_ids },
       },
@@ -1860,7 +1877,7 @@ export const checkConflicts = async (req: AuthRequest, res: Response): Promise<v
     });
 
     // Get user's existing enrollments
-    const existingEnrollments = await prisma.enrollment.findMany({
+    const existingEnrollments = await prisma.enrollments.findMany({
       where: {
         userId: user_id,
         status: EnrollmentStatus.CONFIRMED,
@@ -1978,7 +1995,7 @@ export const getDegreeAudit = async (req: AuthRequest, res: Response): Promise<v
   try {
     const { id } = req.params;
 
-    const student = await prisma.student.findUnique({
+    const student = await prisma.students.findUnique({
       where: { id: parseInt(id) },
       include: {
         major: {
@@ -2134,11 +2151,11 @@ export const getPrograms = async (req: AuthRequest, res: Response): Promise<void
   try {
     const { department, degree } = req.query;
 
-    const where: Prisma.MajorWhereInput = {};
+    const where: any = {};
     if (department) where.department = department as string;
     if (degree) where.degree = degree as any;
 
-    const programs = await prisma.major.findMany({
+    const programs = await prisma.majors.findMany({
       where,
       include: {
         requirements: true,
@@ -2153,11 +2170,36 @@ export const getPrograms = async (req: AuthRequest, res: Response): Promise<void
       },
     });
 
+    // Transform to match frontend expectations (camelCase)
+    const transformedPrograms = programs.map((program: any) => ({
+      id: program.id,
+      code: program.code,
+      name: program.name,
+      department: program.department,
+      degree: program.degree,
+      totalCredits: program.totalCredits || program.total_credits,
+      description: program.description,
+      requirements: program.requirements?.map((req: any) => ({
+        id: req.id,
+        category: req.category,
+        name: req.name,
+        credits: req.credits,
+        description: req.description,
+      })),
+      studentCount: program._count?.students || 0,
+    }));
+
     res.status(200).json({
       success: true,
-      data: programs,
+      data: transformedPrograms,
     });
-  } catch (error) {
+  } catch (error: any) {
+    console.error('Error in getPrograms:', error);
+    // If it's a Prisma error, provide more details
+    if (error.code) {
+      console.error('Prisma error code:', error.code);
+      console.error('Prisma error message:', error.message);
+    }
     throw error;
   }
 };
@@ -2170,7 +2212,7 @@ export const getProgramById = async (req: AuthRequest, res: Response): Promise<v
   try {
     const { id } = req.params;
 
-    const program = await prisma.major.findUnique({
+    const program = await prisma.majors.findUnique({
       where: { id: parseInt(id) },
       include: {
         requirements: true,
@@ -2209,7 +2251,7 @@ export const createProgram = async (req: AuthRequest, res: Response): Promise<vo
   try {
     const { code, name, department, degree, total_credits, description, requirements } = req.body;
 
-    const existing = await prisma.major.findUnique({
+    const existing = await prisma.majors.findUnique({
       where: { code },
     });
 
@@ -2217,7 +2259,7 @@ export const createProgram = async (req: AuthRequest, res: Response): Promise<vo
       throw new ConflictError('Program with this code already exists');
     }
 
-    const program = await prisma.major.create({
+    const program = await prisma.majors.create({
       data: {
         code,
         name,
@@ -2241,7 +2283,7 @@ export const createProgram = async (req: AuthRequest, res: Response): Promise<vo
     });
 
     // Log audit
-    await prisma.auditLog.create({
+    await prisma.audit_logs.create({
       data: {
         userId: req.user!.id,
         action: 'CREATE',
@@ -2270,7 +2312,7 @@ export const updateProgram = async (req: AuthRequest, res: Response): Promise<vo
     const { id } = req.params;
     const { name, description, total_credits } = req.body;
 
-    const program = await prisma.major.findUnique({
+    const program = await prisma.majors.findUnique({
       where: { id: parseInt(id) },
     });
 
@@ -2283,7 +2325,7 @@ export const updateProgram = async (req: AuthRequest, res: Response): Promise<vo
     if (description) updateData.description = description;
     if (total_credits !== undefined) updateData.totalCredits = total_credits;
 
-    const updated = await prisma.major.update({
+    const updated = await prisma.majors.update({
       where: { id: parseInt(id) },
       data: updateData,
       include: {
@@ -2292,7 +2334,7 @@ export const updateProgram = async (req: AuthRequest, res: Response): Promise<vo
     });
 
     // Log audit
-    await prisma.auditLog.create({
+    await prisma.audit_logs.create({
       data: {
         userId: req.user!.id,
         action: 'UPDATE',
@@ -2350,7 +2392,7 @@ export const bulkImportStudents = async (req: AuthRequest, res: Response): Promi
         } = studentData;
 
         // Check if exists
-        const existing = await prisma.user.findFirst({
+        const existing = await prisma.users.findFirst({
           where: {
             OR: [{ email }, { userIdentifier: student_id }],
           },
@@ -2367,7 +2409,7 @@ export const bulkImportStudents = async (req: AuthRequest, res: Response): Promi
 
         const passwordHash = await bcrypt.hash(password || 'Welcome123!', 10);
 
-        const user = await prisma.user.create({
+        const user = await prisma.users.create({
           data: {
             userIdentifier: student_id,
             email,
@@ -2405,7 +2447,7 @@ export const bulkImportStudents = async (req: AuthRequest, res: Response): Promi
     }
 
     // Log audit
-    await prisma.auditLog.create({
+    await prisma.audit_logs.create({
       data: {
         userId: req.user!.id,
         action: 'BULK_IMPORT',
@@ -2446,7 +2488,7 @@ export const exportStudents = async (req: AuthRequest, res: Response): Promise<v
       };
     }
 
-    const students = await prisma.student.findMany({
+    const students = await prisma.students.findMany({
       where,
       include: {
         user: {

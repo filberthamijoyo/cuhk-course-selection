@@ -79,8 +79,8 @@ export function CourseManagement() {
 
   const filteredCourses = courses?.filter((course) => {
     const matchesSearch =
-      course.courseName.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      course.courseCode.toLowerCase().includes(searchQuery.toLowerCase());
+      (course.courseName?.toLowerCase() || '').includes(searchQuery.toLowerCase()) ||
+      (course.courseCode?.toLowerCase() || '').includes(searchQuery.toLowerCase());
     const matchesDept = departmentFilter === 'ALL' || course.department === departmentFilter;
     const matchesStatus = statusFilter === 'ALL' || course.status === statusFilter;
     return matchesSearch && matchesDept && matchesStatus;
