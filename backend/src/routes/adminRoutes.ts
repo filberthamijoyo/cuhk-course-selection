@@ -46,6 +46,15 @@ import {
   // Bulk Operations
   bulkImportStudents,
   exportStudents,
+  // Email Notifications
+  sendEmail,
+  sendBulkEmail,
+  // Transcript Generation
+  generateTranscript,
+  // Academic Calendar
+  getAcademicTerms,
+  createAcademicTerm,
+  updateAcademicTerm,
 } from '../controllers/adminController';
 import { authenticate, requireAdmin } from '../middleware/auth';
 import { adminLimiter } from '../middleware/rateLimiter';
@@ -368,5 +377,65 @@ router.post('/students/import', asyncHandler(bulkImportStudents));
  * @access  Private (Admin)
  */
 router.get('/students/export', asyncHandler(exportStudents));
+
+/**
+ * ================
+ * EMAIL NOTIFICATIONS
+ * ================
+ */
+
+/**
+ * @route   POST /api/admin/emails/send
+ * @desc    Send email to specific students
+ * @access  Private (Admin)
+ */
+router.post('/emails/send', asyncHandler(sendEmail));
+
+/**
+ * @route   POST /api/admin/emails/bulk
+ * @desc    Send bulk email to students by filter
+ * @access  Private (Admin)
+ */
+router.post('/emails/bulk', asyncHandler(sendBulkEmail));
+
+/**
+ * ================
+ * TRANSCRIPT GENERATION
+ * ================
+ */
+
+/**
+ * @route   GET /api/admin/transcripts/:studentId/generate
+ * @desc    Generate transcript for student
+ * @access  Private (Admin)
+ */
+router.get('/transcripts/:studentId/generate', asyncHandler(generateTranscript));
+
+/**
+ * ================
+ * ACADEMIC CALENDAR
+ * ================
+ */
+
+/**
+ * @route   GET /api/admin/calendar/terms
+ * @desc    Get all academic terms
+ * @access  Private (Admin)
+ */
+router.get('/calendar/terms', asyncHandler(getAcademicTerms));
+
+/**
+ * @route   POST /api/admin/calendar/terms
+ * @desc    Create academic term
+ * @access  Private (Admin)
+ */
+router.post('/calendar/terms', asyncHandler(createAcademicTerm));
+
+/**
+ * @route   PUT /api/admin/calendar/terms/:id
+ * @desc    Update academic term
+ * @access  Private (Admin)
+ */
+router.put('/calendar/terms/:id', asyncHandler(updateAcademicTerm));
 
 export default router;
