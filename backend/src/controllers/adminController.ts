@@ -4,7 +4,15 @@ import { AuthRequest } from '../types/express.types';
 import { CourseCreateRequest, CourseUpdateRequest } from '../types/course.types';
 import { BadRequestError, NotFoundError, ConflictError } from '../middleware/errorHandler';
 import { deleteCached, CACHE_KEYS } from '../config/redis';
-import { Prisma, EnrollmentStatus, GradeStatus, StudentStatus, CourseStatus } from '@prisma/client';
+import {
+  Prisma,
+  EnrollmentStatus,
+  GradeStatus,
+  StudentStatus,
+  CourseStatus,
+  Role,
+  Semester,
+} from '@prisma/client';
 
 /**
  * ===================
@@ -750,28 +758,54 @@ export const deleteStudent = async (req: AuthRequest, res: Response): Promise<vo
  */
 export const getEnrollments = async (req: AuthRequest, res: Response): Promise<void> => {
   try {
-    const {
-      page = 1,
-      perPage = 50,
-      status,
-      course_id,
-      student_id,
-      semester,
-      year,
-    } = req.query;
+    const { page = 1, perPage = 50, status, course_id, student_id, semester, year } = req.query;
 
     const skip = (Number(page) - 1) * Number(perPage);
     const take = Number(perPage);
 
     const where: Prisma.EnrollmentWhereInput = {};
 
-    if (status) where.status = status as EnrollmentStatus;
-    if (course_id) where.courseId = parseInt(course_id as string);
-    if (student_id) where.userId = parseInt(student_id as string);
+    const normalizedStatus = (() => {
+      if (!status) {
+        return undefined;
+      }
+
+      const statusValue = Array.isArray(status) ? status[0] : status;
+      if (!statusValue || statusValue.toUpperCase() === 'ALL') {
+        return undefined;
+      }
+
+      const statusMap: Record<string, EnrollmentStatus> = {
+        ENROLLED: EnrollmentStatus.CONFIRMED,
+        CONFIRMED: EnrollmentStatus.CONFIRMED,
+        WAITLISTED: EnrollmentStatus.WAITLISTED,
+        PENDING: EnrollmentStatus.PENDING,
+        DROPPED: EnrollmentStatus.DROPPED,
+        REJECTED: EnrollmentStatus.REJECTED,
+      };
+
+      return statusMap[statusValue.toUpperCase()];
+    })();
+
+    if (normalizedStatus) {
+      where.status = normalizedStatus;
+    }
+
+    if (course_id) where.course_id = parseInt(course_id as string, 10);
+    if (student_id) where.user_id = parseInt(student_id as string, 10);
+
     if (semester || year) {
-      where.course = {};
-      if (semester) where.course.semester = semester as any;
-      if (year) where.course.year = parseInt(year as string);
+      const courseFilter: Prisma.CourseWhereInput = {};
+      if (semester) {
+        courseFilter.semester = semester as Semester;
+      }
+      if (year) {
+        courseFilter.year = parseInt(year as string, 10);
+      }
+
+      if (Object.keys(courseFilter).length > 0) {
+        where.courses = courseFilter;
+      }
     }
 
     const [enrollments, total] = await Promise.all([
@@ -780,44 +814,74 @@ export const getEnrollments = async (req: AuthRequest, res: Response): Promise<v
         skip,
         take,
         include: {
-          user: {
+          users: {
             select: {
               id: true,
-              fullName: true,
+              full_name: true,
               email: true,
-              userIdentifier: true,
-              student: {
-                select: {
-                  studentId: true,
-                  year: true,
-                  major: true,
-                },
-              },
+              user_identifier: true,
+              major: true,
+              year_level: true,
             },
           },
-          course: {
-            include: {
-              instructor: {
-                select: {
-                  id: true,
-                  fullName: true,
-                },
-              },
-              timeSlots: true,
+          courses: {
+            select: {
+              id: true,
+              course_code: true,
+              course_name: true,
+              department: true,
+              semester: true,
+              year: true,
+              credits: true,
             },
           },
-          grade: true,
+          grades: {
+            select: {
+              letter_grade: true,
+              numeric_grade: true,
+            },
+          },
         },
         orderBy: {
-          enrolledAt: 'desc',
+          enrolled_at: 'desc',
         },
       }),
       prisma.enrollments.count({ where }),
     ]);
 
+    const formatted = enrollments.map((enrollment) => ({
+      id: enrollment.id,
+      status: enrollment.status === EnrollmentStatus.CONFIRMED ? 'ENROLLED' : enrollment.status,
+      enrolledAt: enrollment.enrolled_at,
+      waitlistPosition: enrollment.waitlist_position ?? undefined,
+      student: {
+        id: enrollment.users.id,
+        userIdentifier: enrollment.users.user_identifier,
+        fullName: enrollment.users.full_name,
+        email: enrollment.users.email,
+        major: enrollment.users.major ?? undefined,
+        yearLevel: enrollment.users.year_level ?? undefined,
+      },
+      course: {
+        id: enrollment.courses.id,
+        courseCode: enrollment.courses.course_code,
+        courseName: enrollment.courses.course_name,
+        department: enrollment.courses.department,
+        semester: enrollment.courses.semester,
+        year: enrollment.courses.year,
+        credits: enrollment.courses.credits,
+      },
+      grade: enrollment.grades
+        ? {
+            letter: enrollment.grades.letter_grade,
+            numeric: enrollment.grades.numeric_grade,
+          }
+        : undefined,
+    }));
+
     res.status(200).json({
       success: true,
-      data: enrollments,
+      data: formatted,
       metadata: {
         page: Number(page),
         perPage: Number(perPage),
@@ -1470,22 +1534,37 @@ export const publishGrades = async (req: AuthRequest, res: Response): Promise<vo
  */
 export const getAllUsers = async (req: AuthRequest, res: Response): Promise<void> => {
   try {
-    const { role, page = 1, limit = 50, search } = req.query;
+    const { role, page = 1, perPage = 50, search } = req.query;
 
-    const skip = (Number(page) - 1) * Number(limit);
-    const take = Number(limit);
+    const skip = (Number(page) - 1) * Number(perPage);
+    const take = Number(perPage);
 
-    const where: Prisma.UserWhereInput = {};
+    const where: Prisma.usersWhereInput = {};
 
     if (role) {
-      where.role = role as any;
+      where.role = role as Role;
     }
 
     if (search) {
       where.OR = [
-        { fullName: { contains: search as string, mode: 'insensitive' } },
-        { email: { contains: search as string, mode: 'insensitive' } },
-        { userIdentifier: { contains: search as string, mode: 'insensitive' } },
+        {
+          full_name: {
+            contains: search as string,
+            mode: 'insensitive',
+          },
+        },
+        {
+          email: {
+            contains: search as string,
+            mode: 'insensitive',
+          },
+        },
+        {
+          user_identifier: {
+            contains: search as string,
+            mode: 'insensitive',
+          },
+        },
       ];
     }
 
@@ -1494,65 +1573,36 @@ export const getAllUsers = async (req: AuthRequest, res: Response): Promise<void
         where,
         skip,
         take,
-        select: {
-          id: true,
-          userIdentifier: true,
-          email: true,
-          fullName: true,
-          role: true,
-          major: true,
-          yearLevel: true,
-          department: true,
-          createdAt: true,
-          updatedAt: true,
-          students_students_user_idTousers: {
-            select: {
-              studentId: true,
-              status: true,
-            },
-          },
-          faculty: {
-            select: {
-              employeeId: true,
-              title: true,
-            },
-          },
-        },
         orderBy: {
-          createdAt: 'desc',
+          created_at: 'desc',
         },
       }),
       prisma.users.count({ where }),
     ]);
 
-    // Transform to match frontend expectations
-    const transformedUsers = users.map((user) => ({
-      ...user,
-      student: user.students_students_user_idTousers
-        ? {
-            studentId: user.students_students_user_idTousers.studentId,
-            status: user.students_students_user_idTousers.status,
-          }
-        : null,
+    const formatted = users.map((user) => ({
+      id: user.id,
+      userIdentifier: user.user_identifier,
+      email: user.email,
+      fullName: user.full_name,
+      role: user.role,
+      major: user.major ?? undefined,
+      yearLevel: user.year_level ?? undefined,
+      department: user.department ?? undefined,
+      createdAt: user.created_at,
     }));
 
     res.status(200).json({
       success: true,
-      data: transformedUsers.map(({ students_students_user_idTousers, ...rest }) => rest),
+      data: formatted,
       metadata: {
         page: Number(page),
-        perPage: Number(limit),
+        perPage: Number(perPage),
         total,
-        totalPages: Math.ceil(total / Number(limit)),
+        totalPages: Math.ceil(total / Number(perPage)),
       },
     });
-  } catch (error: any) {
-    console.error('Error in getAllUsers:', error);
-    // If it's a Prisma error, provide more details
-    if (error.code) {
-      console.error('Prisma error code:', error.code);
-      console.error('Prisma error message:', error.message);
-    }
+  } catch (error) {
     throw error;
   }
 };
@@ -1614,6 +1664,171 @@ export const getSystemStatistics = async (_req: AuthRequest, res: Response): Pro
         grades: {
           pending_approval: pendingGrades,
         },
+      },
+    });
+  } catch (error) {
+    throw error;
+  }
+};
+
+/**
+ * Get aggregated report data for analytics dashboard
+ * GET /api/admin/reports
+ */
+export const getAdminReports = async (_req: AuthRequest, res: Response): Promise<void> => {
+  try {
+    const [confirmedEnrollments, popularCoursesRaw, studentsByYearRaw, gpaRecords] = await Promise.all([
+      prisma.enrollments.findMany({
+        where: {
+          status: EnrollmentStatus.CONFIRMED,
+        },
+        select: {
+          id: true,
+          courses: {
+            select: {
+              department: true,
+              semester: true,
+              year: true,
+            },
+          },
+        },
+      }),
+      prisma.courses.findMany({
+        select: {
+          course_code: true,
+          course_name: true,
+          current_enrollment: true,
+          max_capacity: true,
+        },
+        orderBy: {
+          current_enrollment: 'desc',
+        },
+        take: 5,
+      }),
+      prisma.students.groupBy({
+        by: ['year'],
+        _count: {
+          _all: true,
+        },
+        orderBy: {
+          year: 'asc',
+        },
+      }),
+      prisma.grades.findMany({
+        where: {
+          grade_points: {
+            not: null,
+          },
+        },
+        select: {
+          grade_points: true,
+        },
+      }),
+    ]);
+
+    const departmentCounts = new Map<string, number>();
+    const termCounts = new Map<
+      string,
+      {
+        semester: Semester;
+        year: number;
+        count: number;
+      }
+    >();
+
+    confirmedEnrollments.forEach((enrollment) => {
+      const department = enrollment.courses?.department || 'Unknown';
+      departmentCounts.set(department, (departmentCounts.get(department) ?? 0) + 1);
+
+      if (enrollment.courses?.semester && enrollment.courses.year) {
+        const key = `${enrollment.courses.semester}-${enrollment.courses.year}`;
+        const existing = termCounts.get(key);
+        if (existing) {
+          existing.count += 1;
+        } else {
+          termCounts.set(key, {
+            semester: enrollment.courses.semester,
+            year: enrollment.courses.year,
+            count: 1,
+          });
+        }
+      }
+    });
+
+    const semesterRank: Record<Semester, number> = {
+      SPRING: 0,
+      SUMMER: 1,
+      FALL: 2,
+    };
+
+    const enrollmentsByDepartment = Array.from(departmentCounts.entries())
+      .map(([department, count]) => ({ department, count }))
+      .sort((a, b) => b.count - a.count)
+      .slice(0, 6);
+
+    const enrollmentTrends = Array.from(termCounts.values())
+      .sort(
+        (a, b) =>
+          b.year - a.year ||
+          (semesterRank[b.semester] ?? -1) -
+            (semesterRank[a.semester] ?? -1)
+      )
+      .slice(0, 8)
+      .map((entry) => ({
+        semester: entry.semester,
+        year: entry.year,
+        count: entry.count,
+      }));
+
+    const popularCourses = popularCoursesRaw.map((course) => ({
+      courseCode: course.course_code,
+      courseName: course.course_name,
+      enrollments: course.current_enrollment,
+      capacity: course.max_capacity,
+    }));
+
+    const studentsByYear = studentsByYearRaw
+      .filter((row) => row.year !== null)
+      .map((row) => ({
+        year: row.year as number,
+        count: row._count._all,
+      }));
+
+    const gpaBuckets = [
+      { label: '3.5 - 4.0', min: 3.5, max: 4.01 },
+      { label: '3.0 - 3.49', min: 3.0, max: 3.5 },
+      { label: '2.5 - 2.99', min: 2.5, max: 3.0 },
+      { label: '2.0 - 2.49', min: 2.0, max: 2.5 },
+      { label: '< 2.0', min: Number.NEGATIVE_INFINITY, max: 2.0 },
+    ];
+
+    const gpaCounts = gpaBuckets.map(() => 0);
+    gpaRecords.forEach((record) => {
+      if (record.grade_points == null) {
+        return;
+      }
+      const value = Number(record.grade_points);
+      const bucketIndex = gpaBuckets.findIndex(
+        (bucket) => value >= bucket.min && value < bucket.max,
+      );
+      if (bucketIndex !== -1) {
+        gpaCounts[bucketIndex] += 1;
+      }
+    });
+
+    const gpaDistribution = gpaBuckets.map((bucket, index) => ({
+      range: bucket.label,
+      count: gpaCounts[index],
+    }));
+
+    res.status(200).json({
+      success: true,
+      data: {
+        enrollmentsByDepartment,
+        enrollmentTrends,
+        popularCourses,
+        studentsByYear,
+        gpaDistribution,
       },
     });
   } catch (error) {

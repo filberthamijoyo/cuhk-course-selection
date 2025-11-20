@@ -31,6 +31,7 @@ import {
   getSystemStatistics,
   getEnrollmentStatistics,
   getGradeStatistics,
+  getAdminReports,
   // Waitlist Management
   getCourseWaitlist,
   promoteFromWaitlist,
@@ -277,6 +278,13 @@ router.get('/statistics/enrollments', asyncHandler(getEnrollmentStatistics));
  * @access  Private (Admin)
  */
 router.get('/statistics/grades', asyncHandler(getGradeStatistics));
+
+/**
+ * @route   GET /api/admin/reports
+ * @desc    Get aggregated analytics reports
+ * @access  Private (Admin)
+ */
+router.get('/reports', asyncHandler(getAdminReports));
 
 /**
  * ================

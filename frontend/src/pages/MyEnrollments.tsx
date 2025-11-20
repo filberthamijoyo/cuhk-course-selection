@@ -429,7 +429,7 @@ export function MyEnrollments() {
                 >
                   Browse Courses
                 </button>
-              </div>
+          </div>
         )}
 
         {/* Waitlisted Courses */}
