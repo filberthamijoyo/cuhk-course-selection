@@ -3,6 +3,7 @@ import { useState } from 'react';
 import { academicAPI } from '../services/api';
 import { useAuth } from '../context/AuthContext';
 import { ChevronDown, ChevronUp, Download, Award, TrendingUp } from 'lucide-react';
+import { formatSemesterYear } from '../utils/semesterFormatter';
 
 export function Transcript() {
   const { user } = useAuth();
@@ -234,7 +235,7 @@ export function Transcript() {
                       <div className="flex items-center gap-4">
                         <div className="text-left">
                           <h3 className="text-xl font-semibold text-foreground">
-                            {term.semester} {term.year}
+                            {formatSemesterYear(term.semester, term.year)}
                           </h3>
                           <p className="text-sm text-muted-foreground mt-1">
                             {term.courses?.length || 0} courses • {term.termCredits || 0} credits

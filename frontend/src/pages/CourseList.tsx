@@ -159,6 +159,11 @@ export function CourseList() {
     setExpandedDepartments(new Set());
   };
 
+  const viewAll = () => {
+    clearAllFilters();
+    expandAll();
+  };
+
   const toggleFilter = (filterType: keyof Pick<CourseFilter, 'category' | 'credits' | 'dayOfWeek'>, value: any) => {
     setFilters((prev) => {
       const currentValues = prev[filterType] as any[];
@@ -196,9 +201,17 @@ export function CourseList() {
   return (
     <div className="max-w-7xl mx-auto py-6 sm:px-6 lg:px-8">
       <div className="px-4 py-6 sm:px-0">
-        <div className="mb-6">
-          <h2 className="text-3xl font-bold text-foreground mb-2">Browse Courses</h2>
-          <p className="text-muted-foreground">Fall 2025 Course Offerings</p>
+        <div className="mb-6 flex items-center justify-between">
+          <div>
+            <h2 className="text-3xl font-bold text-foreground mb-2">Browse Courses</h2>
+            <p className="text-muted-foreground">Term 1 2025 Course Offerings</p>
+          </div>
+          <button
+            onClick={viewAll}
+            className="px-4 py-2 bg-primary text-primary-foreground rounded-lg hover:bg-primary/90 transition-colors font-medium shadow-sm"
+          >
+            View All
+          </button>
         </div>
 
         {/* Search and Filters */}
@@ -361,6 +374,13 @@ export function CourseList() {
               Showing {filteredCourses?.length || 0} courses across {Object.keys(coursesByDepartment || {}).length} departments
             </div>
             <div className="flex gap-2">
+              <button
+                onClick={viewAll}
+                className="text-sm text-primary hover:text-primary/80 font-medium"
+              >
+                View All
+              </button>
+              <span className="text-muted-foreground">|</span>
               <button
                 onClick={expandAll}
                 className="text-sm text-primary hover:text-primary/80 font-medium"

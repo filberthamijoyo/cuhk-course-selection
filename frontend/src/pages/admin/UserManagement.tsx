@@ -13,6 +13,9 @@ import {
 } from 'lucide-react';
 import api from '../../services/api';
 import { CreateStudentModal } from '../../components/admin/CreateStudentModal';
+import { EditStudentModal } from '../../components/admin/EditStudentModal';
+import { EditStudentPersonalInfoModal } from '../../components/admin/EditStudentPersonalInfoModal';
+import { UserCircle } from 'lucide-react';
 
 interface User {
   id: number;
@@ -30,6 +33,8 @@ export function UserManagement() {
   const [searchQuery, setSearchQuery] = useState('');
   const [roleFilter, setRoleFilter] = useState<string>('ALL');
   const [showCreateModal, setShowCreateModal] = useState(false);
+  const [editingStudentId, setEditingStudentId] = useState<number | null>(null);
+  const [editingPersonalInfoStudentId, setEditingPersonalInfoStudentId] = useState<number | null>(null);
   const queryClient = useQueryClient();
 
   const { data: users, isLoading } = useQuery<User[]>({
@@ -204,12 +209,56 @@ export function UserManagement() {
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm">
                       <div className="flex items-center gap-2">
-                        <button
-                          className="p-2 hover:bg-blue-50 dark:hover:bg-blue-950 rounded-lg transition-colors"
-                          title="Edit user"
-                        >
-                          <Edit2 className="h-4 w-4 text-blue-600 dark:text-blue-400" />
-                        </button>
+                        {user.role === 'STUDENT' && (
+                          <>
+                            <button
+                              onClick={async () => {
+                                try {
+                                  // Fetch all students and find the one matching this user
+                                  const studentsRes = await api.get('/admin/students');
+                                  const students = studentsRes.data.data || [];
+                                  const student = students.find((s: any) => 
+                                    s.users?.id === user.id || 
+                                    s.user?.id === user.id ||
+                                    s.user_id === user.id
+                                  );
+                                  if (student) {
+                                    setEditingStudentId(student.id);
+                                  }
+                                } catch (error) {
+                                  console.error('Error fetching student ID:', error);
+                                }
+                              }}
+                              className="p-2 hover:bg-blue-50 dark:hover:bg-blue-950 rounded-lg transition-colors"
+                              title="Edit student"
+                            >
+                              <Edit2 className="h-4 w-4 text-blue-600 dark:text-blue-400" />
+                            </button>
+                            <button
+                              onClick={async () => {
+                                try {
+                                  // Fetch all students and find the one matching this user
+                                  const studentsRes = await api.get('/admin/students');
+                                  const students = studentsRes.data.data || [];
+                                  const student = students.find((s: any) => 
+                                    s.users?.id === user.id || 
+                                    s.user?.id === user.id ||
+                                    s.user_id === user.id
+                                  );
+                                  if (student) {
+                                    setEditingPersonalInfoStudentId(student.id);
+                                  }
+                                } catch (error) {
+                                  console.error('Error fetching student ID:', error);
+                                }
+                              }}
+                              className="p-2 hover:bg-green-50 dark:hover:bg-green-950 rounded-lg transition-colors"
+                              title="Edit personal info"
+                            >
+                              <UserCircle className="h-4 w-4 text-green-600 dark:text-green-400" />
+                            </button>
+                          </>
+                        )}
                         <button
                           className="p-2 hover:bg-red-50 dark:hover:bg-red-950 rounded-lg transition-colors"
                           title="Delete user"
@@ -238,6 +287,24 @@ export function UserManagement() {
 
       {/* Create Student Modal */}
       <CreateStudentModal isOpen={showCreateModal} onClose={() => setShowCreateModal(false)} />
+      
+      {/* Edit Student Modal */}
+      {editingStudentId && (
+        <EditStudentModal
+          isOpen={!!editingStudentId}
+          onClose={() => setEditingStudentId(null)}
+          studentId={editingStudentId}
+        />
+      )}
+
+      {/* Edit Student Personal Info Modal */}
+      {editingPersonalInfoStudentId && (
+        <EditStudentPersonalInfoModal
+          isOpen={!!editingPersonalInfoStudentId}
+          onClose={() => setEditingPersonalInfoStudentId(null)}
+          studentId={editingPersonalInfoStudentId}
+        />
+      )}
     </div>
   );
 }

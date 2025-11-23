@@ -737,7 +737,7 @@ function processTranscriptData(enrollments: any[], majorDepartment?: string | nu
     } else {
       const prevYear = year - 1;
       const currentYearShort = year.toString().slice(-2);
-      termKey = `${prevYear}-${currentYearShort} Summer Session`;
+      termKey = `${prevYear}-${currentYearShort} Summer`;
     }
 
     if (!termMap.has(termKey)) {
@@ -793,7 +793,12 @@ function processTranscriptData(enrollments: any[], majorDepartment?: string | nu
         cumulativeUnits += course.credits;
       }
 
-      if (course.gradePoints !== null && course.gradePoints !== undefined) {
+      // Exclude withdrawn courses (W) from GPA calculation
+      if (
+        course.gradePoints !== null &&
+        course.gradePoints !== undefined &&
+        course.grade.toUpperCase() !== 'W'
+      ) {
         termQualityPoints += course.gradePoints * course.credits;
         termCredits += course.credits;
 
@@ -827,6 +832,11 @@ function calculateCumulativeGPA(enrollments: any[]): number {
     const grade = enrollment.grades;
     const credits = enrollment.courses.credits;
 
+    // Exclude withdrawn courses (W) from GPA calculation
+    if (grade && grade.letter_grade && grade.letter_grade.toUpperCase() === 'W') {
+      return;
+    }
+
     if (grade && grade.grade_points !== null && grade.grade_points !== undefined) {
       totalQualityPoints += grade.grade_points * credits;
       totalCredits += credits;
@@ -847,6 +857,11 @@ function calculateMajorGPA(enrollments: any[], majorDepartment?: string | null):
     const course = enrollment.courses;
     const grade = enrollment.grades;
     const credits = course.credits;
+
+    // Exclude withdrawn courses (W) from GPA calculation
+    if (grade && grade.letter_grade && grade.letter_grade.toUpperCase() === 'W') {
+      return;
+    }
 
     // Only include courses from the same department as the major
     if (
@@ -895,6 +910,11 @@ export async function getGPA(req: AuthRequest, res: Response): Promise<void> {
     let totalCredits = 0;
 
     enrollmentsWithGrades.forEach(enrollment => {
+      // Exclude withdrawn courses (W) from GPA calculation
+      if (enrollment.grades?.letter_grade && enrollment.grades.letter_grade.toUpperCase() === 'W') {
+        return;
+      }
+
       if (enrollment.grades?.grade_points !== null && enrollment.grades?.grade_points !== undefined) {
         const credits = enrollment.courses.credits || 0;
         totalQualityPoints += enrollment.grades.grade_points * credits;

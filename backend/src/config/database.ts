@@ -5,17 +5,37 @@ dotenv.config();
 
 /**
  * PostgreSQL Database Configuration
+ * Uses DATABASE_URL if available (for Supabase), otherwise falls back to individual parameters
  */
-const poolConfig: PoolConfig = {
-  host: process.env.DB_HOST || 'localhost',
-  port: parseInt(process.env.DB_PORT || '5432'),
-  database: process.env.DB_NAME || 'course_selection',
-  user: process.env.DB_USER || 'postgres',
-  password: process.env.DB_PASSWORD || 'password',
-  max: parseInt(process.env.DB_MAX_CONNECTIONS || '20'),
-  idleTimeoutMillis: 30000,
-  connectionTimeoutMillis: 2000,
-};
+function getPoolConfig(): PoolConfig {
+  // If DATABASE_URL is set (e.g., for Supabase), use it directly
+  if (process.env.DATABASE_URL) {
+    return {
+      connectionString: process.env.DATABASE_URL,
+      max: parseInt(process.env.DB_MAX_CONNECTIONS || '20'),
+      idleTimeoutMillis: 30000,
+      connectionTimeoutMillis: 2000,
+      // For Supabase connection pooling, we need to handle SSL
+      ssl: process.env.DATABASE_URL?.includes('supabase.com') 
+        ? { rejectUnauthorized: false }
+        : undefined,
+    };
+  }
+
+  // Fallback to individual connection parameters (for local development)
+  return {
+    host: process.env.DB_HOST || 'localhost',
+    port: parseInt(process.env.DB_PORT || '5432'),
+    database: process.env.DB_NAME || 'course_selection',
+    user: process.env.DB_USER || 'postgres',
+    password: process.env.DB_PASSWORD || 'password',
+    max: parseInt(process.env.DB_MAX_CONNECTIONS || '20'),
+    idleTimeoutMillis: 30000,
+    connectionTimeoutMillis: 2000,
+  };
+}
+
+const poolConfig: PoolConfig = getPoolConfig();
 
 /**
  * Create PostgreSQL Connection Pool

@@ -5,18 +5,18 @@ import { ThemeProvider } from './contexts/ThemeContext';
 import { MainLayout } from './components/layout/MainLayout';
 import { Login } from './pages/Login';
 import { CourseDetails } from './pages/CourseDetails';
-import { MyEnrollments } from './pages/MyEnrollments';
+import { MyCourses } from './pages/MyCourses';
+import { CourseSearch } from './pages/CourseSearch';
 
 // New Student Pages
 import { StudentDashboard } from './pages/StudentDashboard';
 import { MyGrades } from './pages/MyGrades';
 import { PersonalInfo } from './pages/PersonalInfo';
-import { DegreePlanning } from './pages/DegreePlanning';
 import { Applications } from './pages/Applications';
+import { EnrollmentsLanding } from './pages/EnrollmentsLanding';
+import { ApplicationsLanding } from './pages/ApplicationsLanding';
 import { CampusInfo } from './pages/CampusInfo';
 import { Transcript } from './pages/Transcript';
-import { DegreeAudit } from './pages/DegreeAudit';
-import { GraduationCheck } from './pages/GraduationCheck';
 import { GradeAnalytics } from './pages/GradeAnalytics';
 
 // Faculty Pages
@@ -31,6 +31,7 @@ import { ProgramManagement } from './pages/admin/ProgramManagement';
 import { EnrollmentManagement } from './pages/admin/EnrollmentManagement';
 import { EnrollmentApprovals } from './pages/admin/EnrollmentApprovals';
 import { GradeApprovals } from './pages/admin/GradeApprovals';
+import { ApplicationApprovals } from './pages/admin/ApplicationApprovals';
 import { Reports } from './pages/admin/Reports';
 
 // New Feature Pages
@@ -39,6 +40,22 @@ import AddDropPage from './pages/AddDropPage';
 import MajorChangePage from './pages/MajorChangePage';
 import EvaluationsPage from './pages/EvaluationsPage';
 import { ShoppingCart } from './pages/ShoppingCart';
+
+// Enrollment Pages
+import { TermInformation } from './pages/TermInformation';
+import { ExamSchedules } from './pages/ExamSchedules';
+import { ClassSchedule } from './pages/ClassSchedule';
+
+// Application Pages
+import { DeclareMajor } from './pages/DeclareMajor';
+import { DeclareMinor } from './pages/DeclareMinor';
+import { DeclareSecondMajor } from './pages/DeclareSecondMajor';
+import { ExchangeVisiting } from './pages/ExchangeVisiting';
+import { ResumptionOfStudy } from './pages/ResumptionOfStudy';
+import { Suspension } from './pages/Suspension';
+import { Withdrawal } from './pages/Withdrawal';
+import { NormalAddition } from './pages/NormalAddition';
+import { LateCourseAddDrop } from './pages/LateCourseAddDrop';
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -114,11 +131,81 @@ function App() {
               }
             />
             <Route
+              path="/my-courses"
+              element={
+                <ProtectedRoute>
+                  <MainLayout>
+                    <MyCourses />
+                  </MainLayout>
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/course-search"
+              element={
+                <ProtectedRoute>
+                  <MainLayout>
+                    <CourseSearch />
+                  </MainLayout>
+                </ProtectedRoute>
+              }
+            />
+            <Route
               path="/enrollments"
               element={
                 <ProtectedRoute>
                   <MainLayout>
-                    <MyEnrollments />
+                    <EnrollmentsLanding />
+                  </MainLayout>
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/enrollments/add"
+              element={
+                <ProtectedRoute>
+                  <MainLayout>
+                    <AddDropPage initialTab="add" />
+                  </MainLayout>
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/enrollments/drop"
+              element={
+                <ProtectedRoute>
+                  <MainLayout>
+                    <AddDropPage initialTab="drop" />
+                  </MainLayout>
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/enrollments/term-information"
+              element={
+                <ProtectedRoute>
+                  <MainLayout>
+                    <TermInformation />
+                  </MainLayout>
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/enrollments/exam-schedules"
+              element={
+                <ProtectedRoute>
+                  <MainLayout>
+                    <ExamSchedules />
+                  </MainLayout>
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/enrollments/class-schedule"
+              element={
+                <ProtectedRoute>
+                  <MainLayout>
+                    <ClassSchedule />
                   </MainLayout>
                 </ProtectedRoute>
               }
@@ -166,28 +253,6 @@ function App() {
               }
             />
 
-            {/* Degree Planning Pages */}
-            <Route
-              path="/planning/degree-audit"
-              element={
-                <ProtectedRoute>
-                  <MainLayout>
-                    <DegreeAudit />
-                  </MainLayout>
-                </ProtectedRoute>
-              }
-            />
-            <Route
-              path="/planning/graduation-check"
-              element={
-                <ProtectedRoute>
-                  <MainLayout>
-                    <GraduationCheck />
-                  </MainLayout>
-                </ProtectedRoute>
-              }
-            />
-
             {/* Personal Info */}
             <Route
               path="/personal"
@@ -200,25 +265,123 @@ function App() {
               }
             />
 
-            {/* Degree Planning */}
-            <Route
-              path="/planning"
-              element={
-                <ProtectedRoute>
-                  <MainLayout>
-                    <DegreePlanning />
-                  </MainLayout>
-                </ProtectedRoute>
-              }
-            />
-
             {/* Applications */}
             <Route
               path="/applications"
               element={
                 <ProtectedRoute>
                   <MainLayout>
+                    <ApplicationsLanding />
+                  </MainLayout>
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/applications/my-applications"
+              element={
+                <ProtectedRoute>
+                  <MainLayout>
                     <Applications />
+                  </MainLayout>
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/applications/students-record/declare-major"
+              element={
+                <ProtectedRoute>
+                  <MainLayout>
+                    <DeclareMajor />
+                  </MainLayout>
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/applications/students-record/declare-minor"
+              element={
+                <ProtectedRoute>
+                  <MainLayout>
+                    <DeclareMinor />
+                  </MainLayout>
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/applications/students-record/declare-second-major"
+              element={
+                <ProtectedRoute>
+                  <MainLayout>
+                    <DeclareSecondMajor />
+                  </MainLayout>
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/applications/students-record/change-major"
+              element={
+                <ProtectedRoute>
+                  <MainLayout>
+                    <MajorChangePage />
+                  </MainLayout>
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/applications/students-record/exchange-visiting"
+              element={
+                <ProtectedRoute>
+                  <MainLayout>
+                    <ExchangeVisiting />
+                  </MainLayout>
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/applications/students-record/resumption-of-study"
+              element={
+                <ProtectedRoute>
+                  <MainLayout>
+                    <ResumptionOfStudy />
+                  </MainLayout>
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/applications/students-record/suspension"
+              element={
+                <ProtectedRoute>
+                  <MainLayout>
+                    <Suspension />
+                  </MainLayout>
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/applications/students-record/withdrawal"
+              element={
+                <ProtectedRoute>
+                  <MainLayout>
+                    <Withdrawal />
+                  </MainLayout>
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/applications/normal-addition"
+              element={
+                <ProtectedRoute>
+                  <MainLayout>
+                    <NormalAddition />
+                  </MainLayout>
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/applications/late-course-add-drop"
+              element={
+                <ProtectedRoute>
+                  <MainLayout>
+                    <LateCourseAddDrop />
                   </MainLayout>
                 </ProtectedRoute>
               }
@@ -370,7 +533,7 @@ function App() {
               element={
                 <ProtectedRoute>
                   <MainLayout>
-                    <Applications />
+                    <ApplicationApprovals />
                   </MainLayout>
                 </ProtectedRoute>
               }

@@ -8,7 +8,6 @@ import {
   BookOpen,
   BarChart3,
   UserCircle,
-  Target,
   Calendar,
   Bell,
   ChevronRight,
@@ -16,8 +15,11 @@ import {
   Clock,
   MapPin,
   FileText,
+  CalendarDays,
+  AlertCircle,
 } from 'lucide-react';
 import type { AcademicEvent } from '../types';
+import { formatLocation } from '../utils/locationFormatter';
 
 export function StudentDashboard() {
   const { user } = useAuth();
@@ -38,6 +40,15 @@ export function StudentDashboard() {
   const { data: calendarEvents } = useQuery({
     queryKey: ['academic-calendar-events', 'dashboard'],
     queryFn: () => academicCalendarService.getEvents(),
+  });
+
+  // Get exam schedules for upcoming exams widget
+  const { data: examSchedules } = useQuery({
+    queryKey: ['exam-schedules', 'dashboard'],
+    queryFn: async () => {
+      const response = await enrollmentAPI.getExamSchedules(true, false);
+      return response.data.data ?? [];
+    },
   });
 
   const [calendarMonth, setCalendarMonth] = useState(new Date().getMonth());
@@ -141,23 +152,132 @@ export function StudentDashboard() {
     return sorted;
   };
 
-  const deriveSlotType = (slot: any): string => {
+  const deriveSlotType = (slot: any, courseCode?: string, courseName?: string): string => {
+    // Helper function to parse time string (handles both HH:MM:SS and HH:MM formats)
+    const parseTime = (timeStr: string): number => {
+      if (!timeStr) return 0;
+      // Handle both "HH:MM:SS" and "HH:MM" formats
+      const parts = timeStr.split(':').map(Number);
+      if (parts.length >= 2) {
+        return parts[0] * 60 + parts[1];
+      }
+      return 0;
+    };
+
+    // Check multiple field name variations for type
+    // Prisma returns snake_case: 'type' field from time_slots table
+    // BUT: We'll still check time patterns even if DB says LECTURE,
+    // because the DB type might be incorrect
     const rawType = slot?.type || slot?.slot_type || slot?.slotType;
+    let dbType: 'TUTORIAL' | 'LECTURE' | null = null;
+    
     if (rawType && typeof rawType === 'string') {
-      return rawType.toUpperCase();
+      const normalized = rawType.toUpperCase().trim();
+      if (normalized === 'TUTORIAL' || normalized === 'TUT' || normalized === 'T') {
+        dbType = 'TUTORIAL';
+      } else if (normalized === 'LECTURE' || normalized === 'LEC' || normalized === 'L') {
+        dbType = 'LECTURE';
+      }
+    }
+    
+    // If DB explicitly says TUTORIAL, trust it (no need to check further)
+    if (dbType === 'TUTORIAL') {
+      return 'TUTORIAL';
+    }
+    // If DB says LECTURE, we'll still check time patterns below and override if needed
+
+    // Get time values - Prisma returns snake_case: start_time, end_time
+    // Handle both string and Date object formats
+    let startTime = slot?.start_time || slot?.startTime || '';
+    let endTime = slot?.end_time || slot?.endTime || '';
+    
+    // Convert Date objects to string if needed
+    if (startTime instanceof Date) {
+      startTime = startTime.toTimeString().substring(0, 8); // HH:MM:SS format
+    }
+    if (endTime instanceof Date) {
+      endTime = endTime.toTimeString().substring(0, 8); // HH:MM:SS format
+    }
+    
+    // Convert to string if not already
+    startTime = String(startTime);
+    endTime = String(endTime);
+    
+    if (!startTime || !endTime || startTime === 'undefined' || endTime === 'undefined') {
+      return 'LECTURE'; // Default if no time info
     }
 
-    const startTime = slot?.start_time || slot?.startTime;
-    const endTime = slot?.end_time || slot?.endTime;
-    if (startTime && endTime) {
-      const duration = timeToMinutes(endTime) - timeToMinutes(startTime);
-      // Tutorials in CUHK schedule grid run in 50-minute blocks,
-      // whereas lectures take the full 80-minute slot.
-      if (duration > 0 && duration <= 60) {
+    // Parse times and calculate duration
+    const startTotal = parseTime(startTime);
+    const endTotal = parseTime(endTime);
+    const duration = endTotal - startTotal;
+    
+    // Validate duration (should be positive)
+    if (duration <= 0 || duration > 600) { // More than 10 hours is invalid
+      return 'LECTURE'; // Invalid time data, default to lecture
+    }
+    
+    // Get time string in HH:MM format for pattern matching
+    const timeStr = startTime.length >= 5 ? startTime.substring(0, 5) : startTime;
+    const hour = Math.floor(startTotal / 60);
+
+    // Check course code/name patterns for tutorial indicators
+    if (courseCode || courseName) {
+      const codeUpper = (courseCode || '').toUpperCase();
+      const nameUpper = (courseName || '').toUpperCase();
+      
+      // Check for tutorial indicators in course code or name
+      if (codeUpper.includes('TUT') || codeUpper.includes('T-') || 
+          nameUpper.includes('TUTORIAL') || nameUpper.includes('TUT ')) {
         return 'TUTORIAL';
       }
     }
 
+    // Check location patterns (some tutorial rooms have specific patterns)
+    const location = (slot?.location || '').toUpperCase();
+    if (location.includes('TUT') || location.includes('TUTORIAL')) {
+      return 'TUTORIAL';
+    }
+
+    // Primary detection: Duration-based
+    // Tutorials in CUHK are typically 50 minutes (48-55 minutes)
+    // Lectures are typically 80 minutes (75-85 minutes)
+    if (duration >= 48 && duration <= 60) {
+      return 'TUTORIAL';
+    }
+    
+    // Secondary detection: Evening slots (17:00-21:00) that are shorter than 80 minutes
+    // Evening tutorials are very common at CUHK
+    // Be more aggressive: any evening slot less than 80 minutes is likely a tutorial
+    if (hour >= 17 && hour <= 21) {
+      if (duration > 0 && duration < 80) {
+        return 'TUTORIAL';
+      }
+    }
+    
+    // Tertiary detection: Specific tutorial time slots
+    // Common CUHK tutorial times: 18:00-18:50, 19:00-19:50, 20:00-20:50
+    const tutorialStartTimes = [
+      '18:00', '19:00', '20:00', 
+      '18:30', '19:30', '20:30', 
+      '17:00', '17:30', '17:50',
+      '18:50', '19:50', '20:50' // Also check end times
+    ];
+    if (tutorialStartTimes.includes(timeStr)) {
+      // If it starts at a tutorial time, it's almost certainly a tutorial
+      // Even if duration is slightly off, trust the time pattern
+      if (duration <= 70) {
+        return 'TUTORIAL';
+      }
+    }
+    
+    // Quaternary detection: Any slot between 17:00-21:00 that's 50-70 minutes
+    // This catches tutorials that might have slightly different durations
+    if (hour >= 17 && hour <= 21 && duration >= 50 && duration <= 70) {
+      return 'TUTORIAL';
+    }
+
+    // Default to LECTURE if none of the above match
     return 'LECTURE';
   };
 
@@ -198,7 +318,47 @@ export function StudentDashboard() {
             const startTime = slot.start_time || slot.startTime;
             const endTime = slot.end_time || slot.endTime;
             
-            const slotType = deriveSlotType(slot);
+            const courseCode = enrollment.courses?.course_code || enrollment.courses?.courseCode;
+            const courseName = enrollment.courses?.course_name || enrollment.courses?.courseName;
+            const slotType = deriveSlotType(slot, courseCode, courseName);
+            
+            // Debug logging for tutorial detection (log all slots to understand data structure)
+            const parseTime = (timeStr: string): number => {
+              if (!timeStr) return 0;
+              const parts = timeStr.split(':').map(Number);
+              return parts.length >= 2 ? parts[0] * 60 + parts[1] : 0;
+            };
+            const startTotal = parseTime(startTime);
+            const endTotal = parseTime(endTime);
+            const duration = endTotal - startTotal;
+            
+            // Log slots that might be tutorials but aren't detected, or all slots for debugging
+            if (duration >= 48 && duration <= 60 && slotType !== 'TUTORIAL') {
+              console.warn('Potential tutorial not detected:', {
+                slotId: slot.id,
+                courseCode,
+                type: slot.type,
+                startTime,
+                endTime,
+                duration,
+                detectedType: slotType,
+                allSlotKeys: Object.keys(slot),
+                rawSlot: slot
+              });
+            }
+            
+            // // Log all detected tutorials
+            // if (slotType === 'TUTORIAL') {
+            //   console.log('✓ Tutorial detected:', {
+            //     slotId: slot.id,
+            //     courseCode,
+            //     type: slot.type,
+            //     startTime,
+            //     endTime,
+            //     duration,
+            //     detectedType: slotType
+            //   });
+            // }
 
             const courseId = enrollment.course_id || enrollment.courseId || enrollment.courses?.id;
             const slotId = slot.id || slot.slot_id || slot.slotId;
@@ -270,10 +430,10 @@ export function StudentDashboard() {
   const quickAccessLinks = [
     { label: 'My Enrollments', icon: BookOpen, link: '/enrollments', color: 'from-blue-500 to-cyan-500' },
     { label: 'My Grades', icon: BarChart3, link: '/academic/grades', color: 'from-green-500 to-emerald-500' },
-    { label: 'Degree Planning', icon: Target, link: '/planning', color: 'from-purple-500 to-pink-500' },
     { label: 'Transcript', icon: FileText, link: '/academic/transcript', color: 'from-orange-500 to-red-500' },
     { label: 'Personal Info', icon: UserCircle, link: '/personal', color: 'from-indigo-500 to-blue-500' },
     { label: 'Academic Calendar', icon: Calendar, link: '/academic-calendar', color: 'from-pink-500 to-rose-500' },
+    { label: 'Exam Schedules', icon: CalendarDays, link: '/enrollments/exam-schedules', color: 'from-red-500 to-orange-500' },
   ];
 
   return (
@@ -509,10 +669,19 @@ export function StudentDashboard() {
                                     // Calculate z-index based on start time and column for proper stacking
                                     const zIndex = 10 + (cls.startMinutes % 100) + column;
                                     
+                                    // Calculate minimum height needed for content (in pixels)
+                                    // Header row: ~16px, Course name: ~28px (2 lines max), Instructor: ~14px, Time: ~14px, Location: ~14px, Padding: 8px
+                                    const minContentHeightPx = 16 + 28 + (cls.instructor ? 14 : 0) + 14 + (cls.location ? 14 : 0) + 8; // ~90px for full content
+                                    const minContentHeightPercent = (minContentHeightPx / 1040) * 100; // Convert to percentage of grid
+                                    
+                                    // Use the larger of: actual time duration or minimum content height
+                                    // This ensures content is visible, but may cause slight overlap for very short slots
+                                    const finalHeightPercent = Math.max(heightPercent, minContentHeightPercent);
+                                    
                                     return (
                                       <div
                                         key={`${cls.courseCode}-${cls.startTime}-${idx}`}
-                                        className={`absolute rounded-lg p-2 border shadow-sm hover:shadow-md transition-all overflow-hidden ${
+                                        className={`absolute rounded-lg px-1.5 py-1 border shadow-sm hover:shadow-md transition-all ${
                                           isTutorial
                                             ? 'bg-gradient-to-br from-purple-500/15 to-purple-500/10 dark:from-purple-500/25 dark:to-purple-500/15 border-purple-500/30'
                                             : 'bg-gradient-to-br from-primary/15 to-primary/10 dark:from-primary/25 dark:to-primary/15 border-primary/30'
@@ -521,39 +690,46 @@ export function StudentDashboard() {
                                           top: `${topPercent}%`,
                                           left: leftPercent,
                                           width: widthPercent,
-                                          height: `${heightPercent}%`,
-                                          minHeight: '70px',
+                                          height: `${finalHeightPercent}%`,
+                                          minHeight: `${minContentHeightPx}px`, // Ensure minimum pixel height
                                           zIndex: zIndex,
+                                          overflowY: heightPercent < minContentHeightPercent ? 'auto' : 'visible', // Scroll only if needed
+                                          overflowX: 'hidden',
                                         }}
                                       >
-                                        <div className="flex items-start justify-between gap-2 mb-1.5">
-                                          <div className="flex-1 min-w-0 overflow-hidden">
-                                            <div className={`text-xs font-bold truncate ${isTutorial ? 'text-purple-600 dark:text-purple-400' : 'text-primary'}`}>
-                                  {cls.courseCode}
-                                </div>
+                                        <div className="flex items-start justify-between gap-1 mb-0.5">
+                                          <div className="flex-1 min-w-0">
+                                            <div className={`text-[10px] font-bold break-words leading-tight ${isTutorial ? 'text-purple-600 dark:text-purple-400' : 'text-primary'}`}>
+                                              {cls.courseCode}
+                                            </div>
                                           </div>
-                                          <span className={`text-xs px-1.5 py-0.5 rounded font-semibold flex-shrink-0 whitespace-nowrap ${
+                                          <span className={`text-[9px] px-1 py-0.5 rounded font-semibold flex-shrink-0 whitespace-nowrap ${
                                             isTutorial
                                               ? 'bg-purple-500/20 text-purple-700 dark:text-purple-300'
                                               : 'bg-primary/20 text-primary dark:text-primary-foreground'
                                           }`}>
-                                            {isTutorial ? 'Tutorial' : 'Lecture'}
+                                            {isTutorial ? 'Tut' : 'Lec'}
                                           </span>
                                         </div>
-                                        <div className="text-xs text-gray-700 dark:text-gray-200 font-medium line-clamp-2 mb-1.5 leading-tight">
+                                        <div className="text-[10px] text-gray-700 dark:text-gray-200 font-medium mb-0.5 leading-tight break-words line-clamp-2">
                                           {cls.courseName}
                                         </div>
-                                        <div className="text-xs text-gray-600 dark:text-gray-300 flex items-center mb-1">
-                                          <Clock className="w-3 h-3 mr-1 flex-shrink-0" />
-                                          <span className="truncate">{cls.startTime.substring(0, 5)} - {cls.endTime.substring(0, 5)}</span>
-                                </div>
-                                {cls.location && (
-                                          <div className="text-xs text-gray-500 dark:text-gray-400 flex items-center">
-                                            <MapPin className="w-3 h-3 mr-1 flex-shrink-0" />
-                                            <span className="truncate">{cls.location}</span>
-                            </div>
-                          )}
-                        </div>
+                                        {cls.instructor && (
+                                          <div className="text-[9px] text-gray-600 dark:text-gray-400 mb-0.5 leading-tight break-words">
+                                            {cls.instructor}
+                                          </div>
+                                        )}
+                                        <div className="text-[9px] text-gray-600 dark:text-gray-300 flex items-center mb-0.5">
+                                          <Clock className="w-2.5 h-2.5 mr-0.5 flex-shrink-0" />
+                                          <span className="break-words">{cls.startTime.substring(0, 5)} - {cls.endTime.substring(0, 5)}</span>
+                                        </div>
+                                        {cls.location && (
+                                          <div className="text-[9px] text-gray-500 dark:text-gray-400 flex items-center">
+                                            <MapPin className="w-2.5 h-2.5 mr-0.5 flex-shrink-0" />
+                                            <span className="break-words">{formatLocation(cls.location)}</span>
+                                          </div>
+                                        )}
+                                      </div>
                                     );
                                   })}
                       </div>
@@ -567,6 +743,138 @@ export function StudentDashboard() {
                 )}
               </div>
             </div>
+
+          {/* Upcoming Exams Widget */}
+          <div className="bg-white dark:bg-gray-800 rounded-xl shadow-md border border-gray-200 dark:border-gray-700">
+            <div className="px-6 py-4 border-b border-gray-200 dark:border-gray-700 flex items-center justify-between">
+              <h2 className="text-xl font-semibold text-gray-900 dark:text-white flex items-center">
+                <CalendarDays className="w-5 h-5 mr-2 text-red-500" />
+                Upcoming Exams
+              </h2>
+              <Link to="/enrollments/exam-schedules" className="text-sm text-primary hover:text-primary/80 font-medium flex items-center">
+                View All
+                <ChevronRight className="w-4 h-4 ml-1" />
+              </Link>
+            </div>
+            <div className="p-6">
+              {!examSchedules || examSchedules.length === 0 ? (
+                <div className="flex flex-col items-center justify-center py-8 text-center">
+                  <CalendarDays className="w-12 h-12 text-gray-300 dark:text-gray-600 mb-3" />
+                  <p className="text-gray-600 dark:text-gray-400 font-medium mb-1">No upcoming exams</p>
+                  <p className="text-sm text-gray-500 dark:text-gray-500">
+                    Exam schedules will appear here when available
+                  </p>
+                </div>
+              ) : (() => {
+                const now = new Date();
+                now.setHours(0, 0, 0, 0);
+                const twoWeeksFromNow = new Date(now);
+                twoWeeksFromNow.setDate(twoWeeksFromNow.getDate() + 14);
+
+                const upcomingExams = (examSchedules as any[])
+                  .filter((exam: any) => {
+                    const examDate = new Date(exam.examDate);
+                    examDate.setHours(0, 0, 0, 0);
+                    return examDate >= now && examDate <= twoWeeksFromNow;
+                  })
+                  .sort((a: any, b: any) => {
+                    const dateA = new Date(a.examDate);
+                    const dateB = new Date(b.examDate);
+                    return dateA.getTime() - dateB.getTime();
+                  })
+                  .slice(0, 5);
+
+                if (upcomingExams.length === 0) {
+                  return (
+                    <div className="flex flex-col items-center justify-center py-8 text-center">
+                      <CalendarDays className="w-12 h-12 text-gray-300 dark:text-gray-600 mb-3" />
+                      <p className="text-gray-600 dark:text-gray-400 font-medium mb-1">No exams in the next 2 weeks</p>
+                      <p className="text-sm text-gray-500 dark:text-gray-500">
+                        Check back later for upcoming exam schedules
+                      </p>
+                    </div>
+                  );
+                }
+
+                return (
+                  <div className="space-y-3">
+                    {upcomingExams.map((exam: any) => {
+                      const examDate = new Date(exam.examDate);
+                      const isToday = examDate.toDateString() === now.toDateString();
+                      const isTomorrow = examDate.toDateString() === new Date(now.getTime() + 24 * 60 * 60 * 1000).toDateString();
+                      const daysUntil = Math.ceil((examDate.getTime() - now.getTime()) / (1000 * 60 * 60 * 24));
+
+                      return (
+                        <Link
+                          key={exam.id}
+                          to="/enrollments/exam-schedules"
+                          className="block p-4 rounded-lg border border-gray-200 dark:border-gray-700 hover:border-red-300 dark:hover:border-red-700 hover:shadow-md transition-all bg-gray-50/50 dark:bg-gray-900/50"
+                        >
+                          <div className="flex items-start gap-4">
+                            <div className={`flex-shrink-0 w-16 h-16 rounded-lg flex flex-col items-center justify-center ${
+                              isToday 
+                                ? 'bg-red-500 text-white' 
+                                : isTomorrow
+                                ? 'bg-orange-500 text-white'
+                                : 'bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-400'
+                            }`}>
+                              <div className="text-xs font-semibold uppercase">
+                                {examDate.toLocaleDateString('en-US', { month: 'short' })}
+                              </div>
+                              <div className="text-xl font-bold">
+                                {examDate.getDate()}
+                              </div>
+                            </div>
+                            <div className="flex-1 min-w-0">
+                              <div className="flex items-start justify-between gap-2 mb-1">
+                                <h3 className="font-semibold text-gray-900 dark:text-white truncate">
+                                  {exam.courseCode}
+                                </h3>
+                                {(isToday || isTomorrow) && (
+                                  <span className={`px-2 py-0.5 text-xs font-semibold rounded-full flex-shrink-0 ${
+                                    isToday
+                                      ? 'bg-red-100 text-red-700 dark:bg-red-900/50 dark:text-red-300'
+                                      : 'bg-orange-100 text-orange-700 dark:bg-orange-900/50 dark:text-orange-300'
+                                  }`}>
+                                    {isToday ? 'Today' : 'Tomorrow'}
+                                  </span>
+                                )}
+                              </div>
+                              <p className="text-sm text-gray-600 dark:text-gray-400 truncate mb-2">
+                                {exam.courseName}
+                              </p>
+                              <div className="flex items-center gap-4 text-xs text-gray-500 dark:text-gray-500">
+                                {exam.startTime && exam.endTime && (
+                                  <div className="flex items-center gap-1">
+                                    <Clock className="w-3 h-3" />
+                                    <span>{exam.startTime.substring(0, 5)} - {exam.endTime.substring(0, 5)}</span>
+                                  </div>
+                                )}
+                                {exam.location && (
+                                  <div className="flex items-center gap-1">
+                                    <MapPin className="w-3 h-3" />
+                                    <span className="truncate">{formatLocation(exam.location)}</span>
+                                  </div>
+                                )}
+                                {!isToday && !isTomorrow && (
+                                  <span className="text-gray-400 dark:text-gray-500">
+                                    {daysUntil} {daysUntil === 1 ? 'day' : 'days'} away
+                                  </span>
+                                )}
+                              </div>
+                            </div>
+                            {isToday && (
+                              <AlertCircle className="w-5 h-5 text-red-500 flex-shrink-0 mt-1" />
+                            )}
+                          </div>
+                        </Link>
+                      );
+                    })}
+                  </div>
+                );
+              })()}
+            </div>
+          </div>
 
           {/* Academic Calendar - Mini Calendar Grid */}
           <div className="bg-white dark:bg-gray-800 rounded-xl shadow-md border border-gray-200 dark:border-gray-700">

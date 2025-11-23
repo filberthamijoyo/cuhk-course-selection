@@ -4,6 +4,7 @@ import {
   dropCourse,
   getMyEnrollments,
   getEnrollmentStatus,
+  getExamSchedules,
 } from '../controllers/enrollmentController';
 import { authenticate, requireStudent } from '../middleware/auth';
 import { enrollmentLimiter } from '../middleware/rateLimiter';
@@ -41,5 +42,12 @@ router.delete('/:enrollmentId', requireStudent, asyncHandler(dropCourse));
  * @access  Private (Student)
  */
 router.get('/my-courses', requireStudent, asyncHandler(getMyEnrollments));
+
+/**
+ * @route   GET /api/enrollments/exam-schedules
+ * @desc    Get exam schedules for enrolled courses
+ * @access  Private (Student)
+ */
+router.get('/exam-schedules', requireStudent, asyncHandler(getExamSchedules));
 
 export default router;

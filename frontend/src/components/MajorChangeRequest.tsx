@@ -1,6 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { majorChangeService } from '../services/majorChangeService';
+import { academicAPI } from '../services/api';
 import type { MajorChangeRequest as MajorChange } from '../types';
+import { FileAttachment } from './FileAttachment';
 
 interface MajorChangeRequestProps {
   currentUser: {
@@ -37,13 +39,53 @@ const MajorChangeRequest: React.FC<MajorChangeRequestProps> = ({ currentUser }) 
   // Form state
   const [requestedMajor, setRequestedMajor] = useState('');
   const [requestedSchool, setRequestedSchool] = useState('');
+  const [currentSchool, setCurrentSchool] = useState('');
   const [gpa, setGpa] = useState('');
   const [unitsCompleted, setUnitsCompleted] = useState('');
-  const [supportingDocuments, setSupportingDocuments] = useState('');
+  const [supportingFile, setSupportingFile] = useState<File | null>(null);
+  const [loadingData, setLoadingData] = useState(true);
 
   useEffect(() => {
     loadMyRequests();
+    loadStudentData();
   }, []);
+
+  const loadStudentData = async () => {
+    try {
+      setLoadingData(true);
+      
+      // Fetch GPA
+      try {
+        const gpaResponse = await academicAPI.getGPA();
+        if (gpaResponse.data.success && gpaResponse.data.data) {
+          const gpaValue = gpaResponse.data.data.cumulativeGPA || 0;
+          setGpa(gpaValue.toFixed(2));
+        }
+      } catch (err) {
+        console.error('Failed to load GPA:', err);
+      }
+
+      // Note: Progress/units completed removed - planning feature deprecated
+
+      // Set current school from user's department or major
+      // Map major to school based on AVAILABLE_MAJORS
+      if (currentUser.major) {
+        const currentMajorInfo = AVAILABLE_MAJORS.find(m => m.name === currentUser.major);
+        if (currentMajorInfo) {
+          setCurrentSchool(currentMajorInfo.school);
+        } else if (currentUser.department) {
+          // Fallback to department if major not found in list
+          setCurrentSchool(currentUser.department);
+        }
+      } else if (currentUser.department) {
+        setCurrentSchool(currentUser.department);
+      }
+    } catch (err) {
+      console.error('Failed to load student data:', err);
+    } finally {
+      setLoadingData(false);
+    }
+  };
 
   const loadMyRequests = async () => {
     try {
@@ -124,7 +166,7 @@ const MajorChangeRequest: React.FC<MajorChangeRequestProps> = ({ currentUser }) 
         requested_school: requestedSchool,
         gpa: gpaNum,
         units_completed: unitsNum,
-        supporting_documents: supportingDocuments || undefined
+        supporting_documents: supportingFile ? supportingFile.name : undefined
       });
 
       setSuccess('Major change request submitted successfully!');
@@ -133,7 +175,7 @@ const MajorChangeRequest: React.FC<MajorChangeRequestProps> = ({ currentUser }) 
       setRequestedSchool('');
       setGpa('');
       setUnitsCompleted('');
-      setSupportingDocuments('');
+      setSupportingFile(null);
       loadMyRequests();
 
       setTimeout(() => setSuccess(null), 5000);
@@ -234,7 +276,22 @@ const MajorChangeRequest: React.FC<MajorChangeRequestProps> = ({ currentUser }) 
               </select>
             </div>
 
-            {/* School (auto-filled) */}
+            {/* Current School (auto-filled) */}
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Current School <span className="text-red-500">*</span>
+              </label>
+              <input
+                type="text"
+                value={currentSchool}
+                readOnly
+                disabled={loadingData}
+                className="w-full px-3 py-2 border border-gray-300 rounded-md bg-gray-50 text-gray-600"
+                placeholder={loadingData ? 'Loading...' : 'N/A'}
+              />
+            </div>
+
+            {/* Requested School (auto-filled) */}
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">
                 Requested School
@@ -260,10 +317,11 @@ const MajorChangeRequest: React.FC<MajorChangeRequestProps> = ({ currentUser }) 
                 value={gpa}
                 onChange={(e) => setGpa(e.target.value)}
                 required
-                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                placeholder="0.00"
+                disabled={loadingData}
+                className="w-full px-3 py-2 border border-gray-300 rounded-md bg-gray-50 text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:opacity-60"
+                placeholder={loadingData ? 'Loading...' : '0.00'}
               />
-              <p className="text-xs text-gray-500 mt-1">Enter your current GPA (0.00 - 4.00)</p>
+              <p className="text-xs text-gray-500 mt-1">Your current GPA (automatically filled)</p>
             </div>
 
             {/* Units Completed */}
@@ -277,10 +335,11 @@ const MajorChangeRequest: React.FC<MajorChangeRequestProps> = ({ currentUser }) 
                 value={unitsCompleted}
                 onChange={(e) => setUnitsCompleted(e.target.value)}
                 required
-                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                placeholder="0"
+                disabled={loadingData}
+                className="w-full px-3 py-2 border border-gray-300 rounded-md bg-gray-50 text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:opacity-60"
+                placeholder={loadingData ? 'Loading...' : '0'}
               />
-              <p className="text-xs text-gray-500 mt-1">Total units completed in current major</p>
+              <p className="text-xs text-gray-500 mt-1">Total units completed (automatically filled)</p>
             </div>
 
             {/* Eligibility Checker */}
@@ -311,18 +370,14 @@ const MajorChangeRequest: React.FC<MajorChangeRequestProps> = ({ currentUser }) 
             )}
 
             {/* Supporting Documents */}
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                Supporting Documents (Optional)
-              </label>
-              <textarea
-                value={supportingDocuments}
-                onChange={(e) => setSupportingDocuments(e.target.value)}
-                rows={3}
-                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                placeholder="Describe any supporting documents, recommendations, or additional information..."
-              />
-            </div>
+            <FileAttachment
+              label="Supporting Documents (optional)"
+              value={supportingFile}
+              onChange={setSupportingFile}
+              maxSizeMB={10}
+              helperText="Upload any supporting documents for your major change request (PDF, DOC, DOCX, images)"
+              accept=".pdf,.doc,.docx,.jpg,.jpeg,.png"
+            />
 
             {/* Submit Button */}
             <button

@@ -1,5 +1,6 @@
 import { useQuery } from '@tanstack/react-query';
 import { academicAPI } from '../services/api';
+import { formatTermString, sortTermsChronologically } from '../utils/semesterFormatter';
 
 export function MyGrades() {
 
@@ -33,9 +34,21 @@ export function MyGrades() {
   };
 
   const calculateTermGPA = (grades: any[]) => {
-    if (!grades.length) return '0.00';
-    const totalPoints = grades.reduce((sum, g) => sum + (g.gradePoints || 0), 0);
-    return (totalPoints / grades.length).toFixed(2);
+    // Filter out withdrawn courses (W) and courses without grade points
+    const validGrades = grades.filter(
+      (g) => g.letterGrade?.toUpperCase() !== 'W' && g.gradePoints !== null && g.gradePoints !== undefined
+    );
+    
+    if (!validGrades.length) return '0.00';
+    
+    // Calculate GPA using credits (quality points / credits)
+    const totalQualityPoints = validGrades.reduce(
+      (sum, g) => sum + (g.gradePoints || 0) * (g.credits || 0),
+      0
+    );
+    const totalCredits = validGrades.reduce((sum, g) => sum + (g.credits || 0), 0);
+    
+    return totalCredits > 0 ? (totalQualityPoints / totalCredits).toFixed(2) : '0.00';
   };
 
   if (isLoading) {
@@ -88,7 +101,10 @@ export function MyGrades() {
 
       {/* Grades by Term */}
       <div className="space-y-8">
-        {Object.entries(gradesByTerm).reverse().map(([term, grades]: [string, any]) => {
+        {Object.entries(gradesByTerm)
+          .sort(([termA], [termB]) => sortTermsChronologically(termA, termB))
+          .reverse()
+          .map(([term, grades]: [string, any]) => {
           const termGrades = grades as any[];
           const termGPA = calculateTermGPA(termGrades.filter(g => g.status === 'PUBLISHED'));
 
@@ -96,7 +112,7 @@ export function MyGrades() {
             <div key={term} className="bg-card border border-border rounded-lg shadow overflow-hidden">
               <div className="bg-muted/50 px-6 py-4 border-b border-border flex items-center justify-between">
                 <div>
-                  <h2 className="text-xl font-semibold text-foreground">{term}</h2>
+                  <h2 className="text-xl font-semibold text-foreground">{formatTermString(term)}</h2>
                   <p className="text-sm text-muted-foreground mt-1">
                     {termGrades.length} courses
                   </p>

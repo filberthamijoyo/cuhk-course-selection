@@ -1,13 +1,13 @@
 import { Link, useLocation } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 import { cn } from '../../lib/utils';
+import { useState, useEffect } from 'react';
 import {
   LayoutDashboard,
   BookOpen,
   FileText,
   BarChart3,
   UserCircle,
-  Target,
   Mail,
   Info,
   Calendar,
@@ -19,9 +19,17 @@ import {
   Users,
   GraduationCap,
   PieChart,
-  CheckCircle2,
-  ClipboardCheck,
   TrendingUp,
+  Plus,
+  Minus,
+  Clock,
+  CalendarDays,
+  FileCheck,
+  School,
+  Globe,
+  ArrowRight,
+  X,
+  Search,
 } from 'lucide-react';
 
 interface SidebarProps {
@@ -29,31 +37,74 @@ interface SidebarProps {
   onClose: () => void;
 }
 
+type NavItem = 
+  | { path: string; label: string; icon?: any }
+  | { separator: true; label: string }
+  | { 
+      path: string;
+      label: string; 
+      icon?: any; 
+      children: Array<{ path: string; label: string; icon?: any }>;
+    };
+
 export function Sidebar({ isOpen, onClose }: SidebarProps) {
   const { user } = useAuth();
   const location = useLocation();
+  const [expandedSections, setExpandedSections] = useState<Set<string>>(new Set());
 
   const isActive = (path: string) => {
     return location.pathname === path || location.pathname.startsWith(path + '/');
   };
 
-  const studentNavItems = [
+  const toggleSection = (label: string) => {
+    setExpandedSections((prev) => {
+      const next = new Set(prev);
+      if (next.has(label)) {
+        next.delete(label);
+      } else {
+        next.add(label);
+      }
+      return next;
+    });
+  };
+
+  const studentNavItems: NavItem[] = [
     { path: '/', label: 'Dashboard', icon: LayoutDashboard },
-    { separator: true, label: 'Enrollment' },
-    { path: '/enrollments', label: 'My Enrollments', icon: FileText },
-    { path: '/cart', label: 'Shopping Cart', icon: ShoppingCart },
-    { path: '/add-drop', label: 'Add/Drop Courses', icon: Edit3 },
-    { path: '/major-change', label: 'Major Change', icon: RotateCcw },
-    { path: '/evaluations', label: 'Course Evaluations', icon: Star },
-    { path: '/applications', label: 'Applications', icon: Mail },
+    { path: '/my-courses', label: 'My Courses', icon: BookOpen },
+    { path: '/course-search', label: 'Course Search', icon: Search },
+    { path: '/evaluations', label: 'Evaluations', icon: Star },
+    { 
+      path: '/enrollments',
+      label: 'Enrollments', 
+      icon: FileText,
+      children: [
+        { path: '/enrollments/add', label: 'Add', icon: Plus },
+        { path: '/enrollments/drop', label: 'Drop', icon: Minus },
+        { path: '/enrollments/exam-schedules', label: 'Exam Schedules', icon: CalendarDays },
+        { path: '/enrollments/class-schedule', label: 'Class Schedule', icon: Clock },
+      ]
+    },
+    { 
+      path: '/applications',
+      label: 'Applications', 
+      icon: Mail,
+      children: [
+        { path: '/applications/students-record/declare-major', label: 'Declare Major', icon: School },
+        { path: '/applications/students-record/declare-minor', label: 'Declare Minor', icon: School },
+        { path: '/applications/students-record/declare-second-major', label: 'Declare Second Major', icon: School },
+        { path: '/applications/students-record/change-major', label: 'Change Major', icon: RotateCcw },
+        { path: '/applications/students-record/exchange-visiting', label: 'Exchange/Visiting', icon: Globe },
+        { path: '/applications/students-record/resumption-of-study', label: 'Resumption of Study', icon: ArrowRight },
+        { path: '/applications/students-record/suspension', label: 'Suspension', icon: X },
+        { path: '/applications/students-record/withdrawal', label: 'Withdrawal', icon: X },
+        { path: '/applications/normal-addition', label: 'Normal Addition', icon: Plus },
+        { path: '/applications/late-course-add-drop', label: 'Late Course Add/Drop', icon: ArrowRight },
+      ]
+    },
     { separator: true, label: 'Academic Records' },
     { path: '/academic/grades', label: 'My Grades', icon: BarChart3 },
     { path: '/academic/transcript', label: 'Transcript', icon: FileText },
     { path: '/academic/analytics', label: 'Grade Analytics', icon: TrendingUp },
-    { separator: true, label: 'Planning' },
-    { path: '/planning', label: 'Degree Planning', icon: Target },
-    { path: '/planning/degree-audit', label: 'Degree Audit', icon: ClipboardCheck },
-    { path: '/planning/graduation-check', label: 'Graduation Check', icon: CheckCircle2 },
     { separator: true, label: 'Personal' },
     { path: '/personal', label: 'Personal Info', icon: UserCircle },
     { separator: true, label: 'Campus' },
@@ -90,6 +141,34 @@ export function Sidebar({ isOpen, onClose }: SidebarProps) {
 
   const navItems = getNavItems();
 
+  // Auto-expand sections with active children or parent
+  useEffect(() => {
+    const newExpanded = new Set<string>();
+    const checkActive = (path: string) => {
+      return location.pathname === path || location.pathname.startsWith(path + '/');
+    };
+    
+    // Only check student nav items for auto-expansion (they have nested items)
+    if (user?.role === 'STUDENT' || !user) {
+      studentNavItems.forEach((item) => {
+        if ('children' in item && item.children) {
+          const hasActiveChild = item.children.some((child) => checkActive(child.path));
+          const isParentActive = item.path && checkActive(item.path);
+          if (hasActiveChild || isParentActive) {
+            newExpanded.add(item.label);
+          }
+        }
+      });
+    }
+    
+    setExpandedSections((prev) => {
+      // Merge with existing expanded sections (user may have manually expanded others)
+      const merged = new Set(prev);
+      newExpanded.forEach((label) => merged.add(label));
+      return merged;
+    });
+  }, [location.pathname, user?.role]);
+
   return (
     <>
       {/* Backdrop for mobile */}
@@ -114,6 +193,7 @@ export function Sidebar({ isOpen, onClose }: SidebarProps) {
           {/* Navigation */}
           <nav className="flex-1 p-4 space-y-1">
             {navItems.map((item, index) => {
+              // Handle separators
               if ('separator' in item && item.separator) {
                 return (
                   <div key={index} className="pt-4 pb-2">
@@ -124,6 +204,88 @@ export function Sidebar({ isOpen, onClose }: SidebarProps) {
                 );
               }
 
+              // Handle expandable sections with children
+              if ('children' in item && item.children) {
+                const isExpanded = expandedSections.has(item.label);
+                const hasActiveChild = item.children.some((child) => isActive(child.path));
+                const isParentActive = item.path && isActive(item.path);
+
+                return (
+                  <div key={item.label}>
+                    <div className="flex items-center">
+                      <Link
+                        to={item.path}
+                        onClick={(e) => {
+                          // Prevent navigation if clicking on the chevron
+                          if ((e.target as HTMLElement).closest('.chevron-container')) {
+                            e.preventDefault();
+                            toggleSection(item.label);
+                          } else {
+                            if (window.innerWidth < 1024) {
+                              onClose();
+                            }
+                          }
+                        }}
+                        className={cn(
+                          'flex-1 flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium',
+                          'transition-all duration-200 group',
+                          isParentActive || hasActiveChild
+                            ? 'bg-primary/10 text-primary'
+                            : 'text-muted-foreground hover:bg-accent hover:text-foreground'
+                        )}
+                      >
+                        {item.icon && <item.icon className="h-4 w-4 flex-shrink-0" />}
+                        <span className="flex-1 text-left">{item.label}</span>
+                      </Link>
+                      <button
+                        onClick={() => toggleSection(item.label)}
+                        className={cn(
+                          'chevron-container p-1 rounded hover:bg-accent',
+                          'transition-all duration-200'
+                        )}
+                      >
+                        <ChevronRight
+                          className={cn(
+                            'h-4 w-4 transition-transform duration-200',
+                            isExpanded && 'rotate-90'
+                          )}
+                        />
+                      </button>
+                    </div>
+                    {isExpanded && (
+                      <div className="ml-4 mt-1 space-y-1 border-l-2 border-border pl-2">
+                        {item.children.map((child) => {
+                          const ChildIcon = child.icon;
+                          const childActive = isActive(child.path);
+                          return (
+                            <Link
+                              key={child.path}
+                              to={child.path}
+                              onClick={() => {
+                                if (window.innerWidth < 1024) {
+                                  onClose();
+                                }
+                              }}
+                              className={cn(
+                                'flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium',
+                                'transition-all duration-200',
+                                childActive
+                                  ? 'bg-primary text-primary-foreground shadow-sm'
+                                  : 'text-muted-foreground hover:bg-accent hover:text-foreground'
+                              )}
+                            >
+                              {ChildIcon && <ChildIcon className="h-4 w-4 flex-shrink-0" />}
+                              <span className="flex-1">{child.label}</span>
+                            </Link>
+                          );
+                        })}
+                      </div>
+                    )}
+                  </div>
+                );
+              }
+
+              // Handle regular navigation items
               if (!('path' in item) || !item.path) return null;
 
               const Icon = item.icon;
@@ -158,8 +320,7 @@ export function Sidebar({ isOpen, onClose }: SidebarProps) {
           <div className="p-4 border-t border-border">
             <div className="text-xs text-muted-foreground">
               <p className="font-medium text-foreground mb-1">Current Term</p>
-              <p>Fall 2024</p>
-              <p className="mt-2">Total Credits: 12</p>
+              <p>Term 1 of 2025-26</p>
             </div>
           </div>
         </div>

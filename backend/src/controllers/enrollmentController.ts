@@ -14,7 +14,7 @@ import * as enrollmentService from '../services/enrollmentService';
 export async function enrollInCourse(req: AuthRequest, res: Response): Promise<void> {
   try {
     const { courseId } = req.body;
-    const userId = (req as any).userId || (req as any).user?.userId;
+    const userId = req.user!.id;
 
     if (!userId) {
       res.status(401).json({
@@ -46,7 +46,7 @@ export async function enrollInCourse(req: AuthRequest, res: Response): Promise<v
 export async function dropCourse(req: AuthRequest, res: Response): Promise<void> {
   try {
     const enrollmentId = parseInt(req.params.enrollmentId);
-    const userId = (req as any).userId || (req as any).user?.userId;
+    const userId = req.user!.id;
 
     if (!userId) {
       res.status(401).json({
@@ -78,7 +78,7 @@ export async function dropCourse(req: AuthRequest, res: Response): Promise<void>
  */
 export async function getMyEnrollments(req: AuthRequest, res: Response): Promise<void> {
   try {
-    const userId = (req as any).userId || (req as any).user?.userId;
+    const userId = req.user!.id;
 
     if (!userId) {
       res.status(401).json({
@@ -150,6 +150,39 @@ export async function getCourseWaitlist(req: AuthRequest, res: Response) {
     res.status(500).json({
       success: false,
       message: error.message || 'Failed to get waitlist'
+    });
+  }
+}
+
+/**
+ * Get exam schedules for enrolled courses
+ * GET /api/enrollments/exam-schedules
+ * Query params: currentTermOnly (boolean) - if true, only return current term exams
+ */
+export async function getExamSchedules(req: AuthRequest, res: Response): Promise<void> {
+  try {
+    const userId = req.user!.id;
+
+    if (!userId) {
+      res.status(401).json({
+        success: false,
+        message: 'Authentication required'
+      });
+      return;
+    }
+
+    const currentTermOnly = req.query.currentTermOnly !== 'false';
+    const allSchedules = req.query.allSchedules === 'true';
+    const examSchedules = await enrollmentService.getExamSchedules(userId, currentTermOnly, allSchedules);
+
+    res.status(200).json({
+      success: true,
+      data: examSchedules
+    });
+  } catch (error: any) {
+    res.status(500).json({
+      success: false,
+      message: error.message || 'Failed to get exam schedules'
     });
   }
 }

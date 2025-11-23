@@ -464,6 +464,62 @@ export async function getCurrentTermEnrollments(userId: number) {
 }
 
 /**
+ * Get exam schedules for user's enrolled courses
+ * Returns exam schedules for courses the user is currently enrolled in
+ */
+export async function getExamSchedules(userId: number, currentTermOnly: boolean = true, allSchedules: boolean = false) {
+  // Get user's enrollments (only needed if not showing all schedules)
+  let courseCodes: string[] = [];
+  
+  if (!allSchedules) {
+    const enrollments = currentTermOnly
+      ? await getCurrentTermEnrollments(userId)
+      : await getUserEnrollments(userId);
+
+    // Extract course codes from enrollments
+    courseCodes = enrollments
+      .filter(e => e.status === EnrollmentStatus.CONFIRMED)
+      .map(e => e.courses.course_code);
+
+    if (courseCodes.length === 0) {
+      return [];
+    }
+  }
+
+  // Get exam schedules
+  const { semester, year } = getCurrentTerm();
+  const term = `Term ${semester === Semester.FALL ? '1' : semester === Semester.SPRING ? '2' : '3'}`;
+
+  const examSchedules = await (prisma as any).exam_schedules.findMany({
+    where: {
+      ...(allSchedules ? {} : {
+        course_code: {
+          in: courseCodes
+        }
+      }),
+      term: currentTermOnly ? term : undefined,
+      year: currentTermOnly ? year : undefined
+    },
+    orderBy: [
+      { exam_date: 'asc' },
+      { start_time: 'asc' }
+    ]
+  });
+
+  return examSchedules.map((exam: any) => ({
+    id: exam.id,
+    courseCode: exam.course_code,
+    courseName: exam.course_name,
+    examDate: exam.exam_date,
+    startTime: exam.start_time,
+    endTime: exam.end_time,
+    location: exam.location,
+    term: exam.term,
+    year: exam.year
+  }));
+}
+
+/**
  * Get enrollment job status
  */
 export async function getEnrollmentJobStatus(jobId: string) {

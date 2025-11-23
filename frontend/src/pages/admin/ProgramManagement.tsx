@@ -11,7 +11,8 @@ import {
   ChevronDown,
   ChevronUp,
 } from 'lucide-react';
-import api from '../../services/api';
+import api, { adminAPI } from '../../services/api';
+import { Modal, ModalFooter } from '../../components/ui/Modal';
 
 interface Requirement {
   id: number;
@@ -37,6 +38,7 @@ export function ProgramManagement() {
   const [searchQuery, setSearchQuery] = useState('');
   const [expandedProgram, setExpandedProgram] = useState<number | null>(null);
   const [showCreateModal, setShowCreateModal] = useState(false);
+  const [editingProgram, setEditingProgram] = useState<Program | null>(null);
   const queryClient = useQueryClient();
 
   const { data: programs, isLoading } = useQuery<Program[]>({
@@ -44,6 +46,15 @@ export function ProgramManagement() {
     queryFn: async () => {
       const response = await api.get('/admin/programs');
       return response.data.data;
+    },
+  });
+
+  const updateMutation = useMutation({
+    mutationFn: ({ id, data }: { id: number; data: any }) =>
+      adminAPI.updateProgram(id, data),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['admin-programs'] });
+      setEditingProgram(null);
     },
   });
 
@@ -181,6 +192,7 @@ export function ProgramManagement() {
                         )}
                       </button>
                       <button
+                        onClick={() => setEditingProgram(program)}
                         className="p-2 hover:bg-blue-50 dark:hover:bg-blue-950 rounded-lg transition-colors"
                         title="Edit program"
                       >
@@ -261,6 +273,128 @@ export function ProgramManagement() {
           </p>
         </div>
       )}
+
+      {/* Edit Program Modal */}
+      {editingProgram && (
+        <EditProgramModal
+          program={editingProgram}
+          isOpen={!!editingProgram}
+          onClose={() => setEditingProgram(null)}
+          onSave={(data) => {
+            updateMutation.mutate({ id: editingProgram.id, data });
+          }}
+          isLoading={updateMutation.isPending}
+        />
+      )}
     </div>
+  );
+}
+
+// Edit Program Modal Component
+interface EditProgramModalProps {
+  program: Program;
+  isOpen: boolean;
+  onClose: () => void;
+  onSave: (data: any) => void;
+  isLoading: boolean;
+}
+
+function EditProgramModal({
+  program,
+  isOpen,
+  onClose,
+  onSave,
+  isLoading,
+}: EditProgramModalProps) {
+  const [formData, setFormData] = useState({
+    name: program.name || '',
+    description: program.description || '',
+    total_credits: program.totalCredits || 0,
+  });
+
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    onSave(formData);
+  };
+
+  if (!isOpen) return null;
+
+  return (
+    <Modal
+      isOpen={isOpen}
+      onClose={onClose}
+      title="Edit Program"
+      description="Update program information"
+      size="lg"
+    >
+      <form onSubmit={handleSubmit} className="space-y-4">
+        <div>
+          <label className="block text-sm font-medium text-foreground mb-1">
+            Program Name <span className="text-red-500">*</span>
+          </label>
+          <input
+            type="text"
+            required
+            value={formData.name}
+            onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+            className="w-full px-3 py-2 border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary bg-background"
+          />
+        </div>
+
+        <div>
+          <label className="block text-sm font-medium text-foreground mb-1">
+            Total Credits Required <span className="text-red-500">*</span>
+          </label>
+          <input
+            type="number"
+            required
+            min="1"
+            value={formData.total_credits}
+            onChange={(e) =>
+              setFormData({ ...formData, total_credits: parseInt(e.target.value) })
+            }
+            className="w-full px-3 py-2 border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary bg-background"
+          />
+        </div>
+
+        <div>
+          <label className="block text-sm font-medium text-foreground mb-1">
+            Description
+          </label>
+          <textarea
+            value={formData.description}
+            onChange={(e) => setFormData({ ...formData, description: e.target.value })}
+            rows={4}
+            className="w-full px-3 py-2 border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary bg-background"
+          />
+        </div>
+
+        <div className="text-sm text-muted-foreground">
+          <p className="font-medium mb-1">Program Details (Read-only)</p>
+          <div className="space-y-1">
+            <p>Code: {program.code}</p>
+            <p>Department: {program.department}</p>
+            <p>Degree: {program.degree}</p>
+          </div>
+        </div>
+
+        <ModalFooter>
+          <button
+            type="button"
+            onClick={onClose}
+            className="px-4 py-2 text-sm font-medium text-foreground bg-background border border-border rounded-lg hover:bg-accent transition-colors"
+          >
+            Cancel
+          </button>
+          <button
+            type="submit"
+            disabled={isLoading}
+            className="px-4 py-2 text-sm font-medium text-primary-foreground bg-primary rounded-lg hover:bg-primary/90 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+          >
+            {isLoading ? 'Saving...' : 'Save Changes'}
+          </button>
+        </ModalFooter>
+      </form>
+    </Modal>
   );
 }

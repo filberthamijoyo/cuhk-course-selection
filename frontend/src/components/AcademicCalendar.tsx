@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
 import { academicCalendarService } from '../services/academicCalendarService';
 import type { AcademicEvent, AddDropStatus } from '../types';
+import { formatSemester } from '../utils/semesterFormatter';
 
 const AcademicCalendar: React.FC = () => {
   const [events, setEvents] = useState<AcademicEvent[]>([]);
@@ -225,8 +226,8 @@ const AcademicCalendar: React.FC = () => {
               className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
             >
               <option value="">All Terms</option>
-              <option value="FALL">Fall</option>
-              <option value="SPRING">Spring</option>
+              <option value="FALL">Term 1</option>
+              <option value="SPRING">Term 2</option>
               <option value="SUMMER">Summer</option>
             </select>
           </div>
@@ -280,7 +281,7 @@ const AcademicCalendar: React.FC = () => {
                               {event.event_type.replace(/_/g, ' ')}
                             </span>
                             <span className="text-xs text-gray-500">
-                              {event.term} {event.year}
+                              {formatSemester(event.term)} {event.year}
                             </span>
                           </div>
                           <h4 className="text-lg font-medium text-gray-900 mb-1">{event.name}</h4>

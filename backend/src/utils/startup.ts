@@ -14,10 +14,14 @@ async function checkDatabase(): Promise<boolean> {
  */
 export async function checkRedis(): Promise<boolean> {
   try {
+    // Check if Redis client is ready before attempting ping
+    if (redisClient.status !== 'ready') {
+      return false;
+    }
     const pong = await redisClient.ping();
     return pong === 'PONG';
   } catch (error) {
-    console.error('Redis check failed:', error);
+    // Don't log errors here - they're expected during startup
     return false;
   }
 }
@@ -75,8 +79,17 @@ export async function displayServiceStatus(): Promise<void> {
     console.log('║ Database: ❌ Disconnected                              ║');
   }
 
+  // Wait a bit for Redis to connect if it's not ready yet
+  let redisReady = await checkRedis();
+  if (!redisReady && redisClient.status === 'connecting') {
+    // Give Redis a moment to connect (max 2 seconds)
+    for (let i = 0; i < 4 && !redisReady; i++) {
+      await new Promise(resolve => setTimeout(resolve, 500));
+      redisReady = await checkRedis();
+    }
+  }
+
   try {
-    const redisReady = await checkRedis();
     console.log(`║ Redis:    ${redisReady ? '✅ Connected' : '❌ Disconnected'}                              ║`);
   } catch (error) {
     console.log('║ Redis:    ❌ Disconnected                              ║');

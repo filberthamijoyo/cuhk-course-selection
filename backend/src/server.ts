@@ -18,7 +18,6 @@ import instructorRoutes from './routes/instructorRoutes';
 import academicRoutes from './routes/academicRoutes';
 import applicationRoutes from './routes/applicationRoutes';
 import personalRoutes from './routes/personalRoutes';
-import planningRoutes from './routes/planningRoutes';
 import facultyRoutes from './routes/facultyRoutes';
 import campusRoutes from './routes/campusRoutes';
 // Additional SIS routes
@@ -142,7 +141,6 @@ app.get('/', (_req: Request, res: Response) => {
       academic: '/api/academic',
       applications: '/api/applications',
       personal: '/api/personal',
-      planning: '/api/planning',
       faculty: '/api/faculty',
       campus: '/api/campus',
       academicCalendar: '/api/academic-calendar',
@@ -164,7 +162,6 @@ app.use('/api/instructor', instructorRoutes);
 app.use('/api/academic', academicRoutes);
 app.use('/api/applications', applicationRoutes);
 app.use('/api/personal', personalRoutes);
-app.use('/api/planning', planningRoutes);
 app.use('/api/faculty', facultyRoutes);
 app.use('/api/campus', campusRoutes);
 

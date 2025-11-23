@@ -17,13 +17,14 @@ const createControllerError = (code: string, message: string, status = 400): Con
  */
 export async function createRequest(req: AuthRequest, res: Response): Promise<void> {
   try {
-    const { student_id, course_id, request_type, reason, is_late_request } = req.body;
+    const { course_id, request_type, reason, is_late_request } = req.body;
+    const student_id = req.user!.id; // Use authenticated user's ID
 
     // Validation
-    if (!student_id || !course_id || !request_type || !reason) {
+    if (!course_id || !request_type || !reason) {
       res.status(400).json({
         success: false,
-        error: 'Missing required fields: student_id, course_id, request_type, reason',
+        error: 'Missing required fields: course_id, request_type, reason',
       });
       return;
     }

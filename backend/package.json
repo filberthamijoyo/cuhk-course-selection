@@ -15,7 +15,8 @@
     "prisma:studio": "npx prisma studio",
     "db:push": "npx prisma db push",
     "db:seed": "npx prisma db seed",
-    "queue:clear": "ts-node src/scripts/clearStuckJobs.ts"
+    "queue:clear": "ts-node src/scripts/clearStuckJobs.ts",
+    "fix:exam-location": "ts-node src/scripts/fixExamLocation.ts"
   },
   "prisma": {
     "seed": "ts-node ../prisma/seed.ts"

@@ -12,28 +12,49 @@ import {
   AlertCircle,
   Clock,
   MapPin,
+  X,
 } from 'lucide-react';
-import api from '../../services/api';
+import api, { adminAPI } from '../../services/api';
+import { formatLocation } from '../../utils/locationFormatter';
+import { Modal, ModalFooter } from '../../components/ui/Modal';
 
 interface Course {
   id: number;
-  courseCode: string;
-  courseName: string;
+  courseCode?: string;
+  course_code?: string;
+  courseName?: string;
+  course_name?: string;
   department: string;
   credits: number;
-  maxCapacity: number;
-  currentEnrollment: number;
+  maxCapacity?: number;
+  max_capacity?: number;
+  currentEnrollment?: number;
+  current_enrollment?: number;
   semester: string;
   year: number;
   status: string;
+  description?: string;
+  prerequisites?: string[] | string;
   instructor?: {
     id: number;
-    fullName: string;
+    fullName?: string;
+    full_name?: string;
+  };
+  users?: {
+    id: number;
+    full_name: string;
+    email: string;
   };
   timeSlots?: Array<{
     dayOfWeek: string;
     startTime: string;
     endTime: string;
+    location: string;
+  }>;
+  time_slots?: Array<{
+    day_of_week: string;
+    start_time: string;
+    end_time: string;
     location: string;
   }>;
 }
@@ -43,13 +64,48 @@ export function CourseManagement() {
   const [departmentFilter, setDepartmentFilter] = useState<string>('ALL');
   const [statusFilter, setStatusFilter] = useState<string>('ACTIVE');
   const [showCreateModal, setShowCreateModal] = useState(false);
+  const [editingCourse, setEditingCourse] = useState<Course | null>(null);
   const queryClient = useQueryClient();
 
   const { data: courses, isLoading } = useQuery<Course[]>({
     queryKey: ['admin-courses'],
     queryFn: async () => {
-      const response = await api.get('/courses');
-      return response.data.data;
+      const response = await adminAPI.getAllCourses();
+      // Transform snake_case to camelCase for consistency
+      return (response.data.data || []).map((course: any) => ({
+        id: course.id,
+        courseCode: course.course_code || course.courseCode,
+        course_name: course.course_name,
+        courseName: course.course_name || course.courseName,
+        department: course.department,
+        credits: course.credits,
+        maxCapacity: course.max_capacity || course.maxCapacity,
+        max_capacity: course.max_capacity,
+        currentEnrollment: course.current_enrollment || course.currentEnrollment || 0,
+        current_enrollment: course.current_enrollment,
+        semester: course.semester,
+        year: course.year,
+        status: course.status,
+        description: course.description,
+        prerequisites: course.prerequisites,
+        instructor: course.users
+          ? {
+              id: course.users.id,
+              fullName: course.users.full_name || course.users.fullName,
+              full_name: course.users.full_name,
+            }
+          : course.instructor,
+        users: course.users,
+        timeSlots: course.time_slots
+          ? course.time_slots.map((slot: any) => ({
+              dayOfWeek: slot.day_of_week || slot.dayOfWeek,
+              startTime: slot.start_time || slot.startTime,
+              endTime: slot.end_time || slot.endTime,
+              location: slot.location || '',
+            }))
+          : course.timeSlots,
+        time_slots: course.time_slots,
+      }));
     },
   });
 
@@ -57,6 +113,24 @@ export function CourseManagement() {
     mutationFn: (courseId: number) => api.delete(`/admin/courses/${courseId}`),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['admin-courses'] });
+    },
+  });
+
+  const updateMutation = useMutation({
+    mutationFn: ({ id, data }: { id: number; data: any }) =>
+      adminAPI.updateCourseDetails(id, data),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['admin-courses'] });
+      setEditingCourse(null);
+    },
+  });
+
+  // Fetch instructors for the edit form
+  const { data: instructors } = useQuery({
+    queryKey: ['instructors'],
+    queryFn: async () => {
+      const response = await adminAPI.getAllUsers({ role: 'INSTRUCTOR' });
+      return response.data.data || [];
     },
   });
 
@@ -185,8 +259,8 @@ export function CourseManagement() {
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
           {filteredCourses?.map((course) => {
             const enrollmentStatus = getEnrollmentStatus(
-              course.currentEnrollment,
-              course.maxCapacity
+              course.currentEnrollment || course.current_enrollment || 0,
+              course.maxCapacity || course.max_capacity || 1
             );
             return (
               <div
@@ -198,15 +272,18 @@ export function CourseManagement() {
                   <div className="flex-1">
                     <div className="flex items-center gap-2 mb-1">
                       <h3 className="text-lg font-semibold text-foreground">
-                        {course.courseCode}
+                        {course.courseCode || course.course_code}
                       </h3>
                       {getStatusBadge(course.status)}
                     </div>
-                    <p className="text-foreground font-medium">{course.courseName}</p>
+                    <p className="text-foreground font-medium">
+                      {course.courseName || course.course_name}
+                    </p>
                     <p className="text-sm text-muted-foreground mt-1">{course.department}</p>
                   </div>
                   <div className="flex items-center gap-2">
                     <button
+                      onClick={() => setEditingCourse(course)}
                       className="p-2 hover:bg-blue-50 dark:hover:bg-blue-950 rounded-lg transition-colors"
                       title="Edit course"
                     >
@@ -226,10 +303,14 @@ export function CourseManagement() {
                 {/* Course Details */}
                 <div className="space-y-3">
                   {/* Instructor */}
-                  {course.instructor && (
+                  {(course.instructor || course.users) && (
                     <div className="flex items-center gap-2 text-sm">
                       <Users className="h-4 w-4 text-muted-foreground" />
-                      <span className="text-foreground">{course.instructor.fullName}</span>
+                      <span className="text-foreground">
+                        {course.instructor?.fullName ||
+                          course.instructor?.full_name ||
+                          course.users?.full_name}
+                      </span>
                     </div>
                   )}
 
@@ -242,30 +323,33 @@ export function CourseManagement() {
                   </div>
 
                   {/* Time Slots */}
-                  {course.timeSlots && course.timeSlots.length > 0 && (
-                    <div className="flex items-start gap-2 text-sm">
-                      <Clock className="h-4 w-4 text-muted-foreground mt-0.5" />
-                      <div className="flex-1">
-                        {course.timeSlots.map((slot, index) => (
-                          <div key={index} className="text-foreground">
-                            {slot.dayOfWeek}: {slot.startTime} - {slot.endTime}
-                            {slot.location && (
-                              <span className="text-muted-foreground ml-2">
-                                ({slot.location})
-                              </span>
-                            )}
-                          </div>
-                        ))}
+                  {(course.timeSlots || course.time_slots) &&
+                    (course.timeSlots || course.time_slots)!.length > 0 && (
+                      <div className="flex items-start gap-2 text-sm">
+                        <Clock className="h-4 w-4 text-muted-foreground mt-0.5" />
+                        <div className="flex-1">
+                          {(course.timeSlots || course.time_slots)!.map((slot: any, index: number) => (
+                            <div key={index} className="text-foreground">
+                              {slot.dayOfWeek || slot.day_of_week}:{' '}
+                              {slot.startTime || slot.start_time} - {slot.endTime || slot.end_time}
+                              {slot.location && (
+                                <span className="text-muted-foreground ml-2">
+                                  ({formatLocation(slot.location)})
+                                </span>
+                              )}
+                            </div>
+                          ))}
+                        </div>
                       </div>
-                    </div>
-                  )}
+                    )}
 
                   {/* Enrollment */}
                   <div className="pt-3 border-t border-border">
                     <div className="flex items-center justify-between mb-2">
                       <span className="text-sm text-muted-foreground">Enrollment</span>
                       <span className="text-sm font-medium text-foreground">
-                        {course.currentEnrollment} / {course.maxCapacity}
+                        {course.currentEnrollment || course.current_enrollment || 0} /{' '}
+                        {course.maxCapacity || course.max_capacity}
                       </span>
                     </div>
                     <div className="w-full bg-muted rounded-full h-2">
@@ -273,7 +357,9 @@ export function CourseManagement() {
                         className={`${enrollmentStatus.color} h-2 rounded-full transition-all duration-300`}
                         style={{
                           width: `${Math.min(
-                            (course.currentEnrollment / course.maxCapacity) * 100,
+                            ((course.currentEnrollment || course.current_enrollment || 0) /
+                              (course.maxCapacity || course.max_capacity || 1)) *
+                              100,
                             100
                           )}%`,
                         }}
@@ -296,6 +382,243 @@ export function CourseManagement() {
           </p>
         </div>
       )}
+
+      {/* Edit Course Modal */}
+      {editingCourse && (
+        <EditCourseModal
+          course={editingCourse}
+          isOpen={!!editingCourse}
+          onClose={() => setEditingCourse(null)}
+          onSave={(data) => {
+            updateMutation.mutate({ id: editingCourse.id, data });
+          }}
+          instructors={instructors || []}
+          isLoading={updateMutation.isPending}
+        />
+      )}
     </div>
+  );
+}
+
+// Edit Course Modal Component
+interface EditCourseModalProps {
+  course: Course;
+  isOpen: boolean;
+  onClose: () => void;
+  onSave: (data: any) => void;
+  instructors: Array<{ id: number; full_name: string; email: string }>;
+  isLoading: boolean;
+}
+
+function EditCourseModal({
+  course,
+  isOpen,
+  onClose,
+  onSave,
+  instructors,
+  isLoading,
+}: EditCourseModalProps) {
+  const [formData, setFormData] = useState({
+    course_code: course.courseCode || course.course_code || '',
+    course_name: course.courseName || course.course_name || '',
+    description: course.description || '',
+    credits: course.credits || 0,
+    instructor_id: course.instructor?.id || course.users?.id || '',
+    department: course.department || '',
+    semester: course.semester || 'Fall',
+    year: course.year || new Date().getFullYear(),
+    max_capacity: course.maxCapacity || course.max_capacity || 0,
+    status: course.status || 'ACTIVE',
+    prerequisites:
+      typeof course.prerequisites === 'string'
+        ? JSON.parse(course.prerequisites)
+        : course.prerequisites || [],
+  });
+
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    onSave(formData);
+  };
+
+  if (!isOpen) return null;
+
+  return (
+    <Modal
+      isOpen={isOpen}
+      onClose={onClose}
+      title="Edit Course"
+      description="Update course information"
+      size="xl"
+    >
+      <form onSubmit={handleSubmit} className="space-y-4">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div>
+            <label className="block text-sm font-medium text-foreground mb-1">
+              Course Code <span className="text-red-500">*</span>
+            </label>
+            <input
+              type="text"
+              required
+              value={formData.course_code}
+              onChange={(e) => setFormData({ ...formData, course_code: e.target.value })}
+              className="w-full px-3 py-2 border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary bg-background"
+            />
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-foreground mb-1">
+              Course Name <span className="text-red-500">*</span>
+            </label>
+            <input
+              type="text"
+              required
+              value={formData.course_name}
+              onChange={(e) => setFormData({ ...formData, course_name: e.target.value })}
+              className="w-full px-3 py-2 border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary bg-background"
+            />
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-foreground mb-1">
+              Department <span className="text-red-500">*</span>
+            </label>
+            <input
+              type="text"
+              required
+              value={formData.department}
+              onChange={(e) => setFormData({ ...formData, department: e.target.value })}
+              className="w-full px-3 py-2 border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary bg-background"
+            />
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-foreground mb-1">
+              Credits <span className="text-red-500">*</span>
+            </label>
+            <input
+              type="number"
+              required
+              min="1"
+              max="10"
+              value={formData.credits}
+              onChange={(e) => setFormData({ ...formData, credits: parseInt(e.target.value) })}
+              className="w-full px-3 py-2 border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary bg-background"
+            />
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-foreground mb-1">
+              Instructor
+            </label>
+            <select
+              value={formData.instructor_id}
+              onChange={(e) =>
+                setFormData({ ...formData, instructor_id: e.target.value ? parseInt(e.target.value) : '' })
+              }
+              className="w-full px-3 py-2 border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary bg-background"
+            >
+              <option value="">Select Instructor</option>
+              {instructors.map((instructor) => (
+                <option key={instructor.id} value={instructor.id}>
+                  {instructor.full_name} ({instructor.email})
+                </option>
+              ))}
+            </select>
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-foreground mb-1">
+              Max Capacity <span className="text-red-500">*</span>
+            </label>
+            <input
+              type="number"
+              required
+              min="1"
+              value={formData.max_capacity}
+              onChange={(e) =>
+                setFormData({ ...formData, max_capacity: parseInt(e.target.value) })
+              }
+              className="w-full px-3 py-2 border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary bg-background"
+            />
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-foreground mb-1">
+              Semester <span className="text-red-500">*</span>
+            </label>
+            <select
+              required
+              value={formData.semester}
+              onChange={(e) => setFormData({ ...formData, semester: e.target.value })}
+              className="w-full px-3 py-2 border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary bg-background"
+            >
+              <option value="Fall">Fall</option>
+              <option value="Spring">Spring</option>
+              <option value="Summer">Summer</option>
+            </select>
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-foreground mb-1">
+              Year <span className="text-red-500">*</span>
+            </label>
+            <input
+              type="number"
+              required
+              min="2020"
+              max="2100"
+              value={formData.year}
+              onChange={(e) => setFormData({ ...formData, year: parseInt(e.target.value) })}
+              className="w-full px-3 py-2 border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary bg-background"
+            />
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-foreground mb-1">
+              Status <span className="text-red-500">*</span>
+            </label>
+            <select
+              required
+              value={formData.status}
+              onChange={(e) => setFormData({ ...formData, status: e.target.value })}
+              className="w-full px-3 py-2 border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary bg-background"
+            >
+              <option value="ACTIVE">Active</option>
+              <option value="CANCELLED">Cancelled</option>
+              <option value="INACTIVE">Inactive</option>
+            </select>
+          </div>
+        </div>
+
+        <div>
+          <label className="block text-sm font-medium text-foreground mb-1">
+            Description
+          </label>
+          <textarea
+            value={formData.description}
+            onChange={(e) => setFormData({ ...formData, description: e.target.value })}
+            rows={4}
+            className="w-full px-3 py-2 border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary bg-background"
+          />
+        </div>
+
+        <ModalFooter>
+          <button
+            type="button"
+            onClick={onClose}
+            className="px-4 py-2 text-sm font-medium text-foreground bg-background border border-border rounded-lg hover:bg-accent transition-colors"
+          >
+            Cancel
+          </button>
+          <button
+            type="submit"
+            disabled={isLoading}
+            className="px-4 py-2 text-sm font-medium text-primary-foreground bg-primary rounded-lg hover:bg-primary/90 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+          >
+            {isLoading ? 'Saving...' : 'Save Changes'}
+          </button>
+        </ModalFooter>
+      </form>
+    </Modal>
   );
 }

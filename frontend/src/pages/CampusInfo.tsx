@@ -1,12 +1,18 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useState } from 'react';
-import { campusAPI } from '../services/api';
+import { campusAPI, adminAPI } from '../services/api';
+import { useAuth } from '../context/AuthContext';
+import { Plus, X } from 'lucide-react';
 
 type ViewType = 'announcements' | 'events';
 
 export function CampusInfo() {
+  const { user } = useAuth();
+  const isAdmin = user?.role === 'ADMINISTRATOR';
   const [activeView, setActiveView] = useState<ViewType>('announcements');
   const [selectedCategory, setSelectedCategory] = useState<string>('');
+  const [showAnnouncementForm, setShowAnnouncementForm] = useState(false);
+  const [showEventForm, setShowEventForm] = useState(false);
   const queryClient = useQueryClient();
 
   const { data: announcements, isLoading: announcementsLoading } = useQuery({
@@ -27,6 +33,30 @@ export function CampusInfo() {
     },
     onError: () => {
       alert('Failed to register for event. You may already be registered.');
+    },
+  });
+
+  const createAnnouncementMutation = useMutation({
+    mutationFn: (data: any) => adminAPI.createAnnouncement(data),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['campus-announcements'] });
+      setShowAnnouncementForm(false);
+      alert('Announcement created successfully!');
+    },
+    onError: (error: any) => {
+      alert(`Failed to create announcement: ${error.response?.data?.message || error.message}`);
+    },
+  });
+
+  const createEventMutation = useMutation({
+    mutationFn: (data: any) => adminAPI.createEvent(data),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['campus-events'] });
+      setShowEventForm(false);
+      alert('Event created successfully!');
+    },
+    onError: (error: any) => {
+      alert(`Failed to create event: ${error.response?.data?.message || error.message}`);
     },
   });
 
@@ -74,9 +104,35 @@ export function CampusInfo() {
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
       {/* Header */}
-      <div className="mb-8">
-        <h1 className="text-3xl font-bold text-foreground">Campus Information</h1>
-        <p className="mt-2 text-muted-foreground">Stay updated with announcements and campus events</p>
+      <div className="mb-8 flex items-center justify-between">
+        <div>
+          <h1 className="text-3xl font-bold text-foreground">Campus Information</h1>
+          <p className="mt-2 text-muted-foreground">
+            {isAdmin ? 'Manage announcements and campus events' : 'Stay updated with announcements and campus events'}
+          </p>
+        </div>
+        {isAdmin && (
+          <div className="flex gap-2">
+            {activeView === 'announcements' && (
+              <button
+                onClick={() => setShowAnnouncementForm(!showAnnouncementForm)}
+                className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 flex items-center gap-2"
+              >
+                <Plus className="h-4 w-4" />
+                {showAnnouncementForm ? 'Cancel' : 'New Announcement'}
+              </button>
+            )}
+            {activeView === 'events' && (
+              <button
+                onClick={() => setShowEventForm(!showEventForm)}
+                className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 flex items-center gap-2"
+              >
+                <Plus className="h-4 w-4" />
+                {showEventForm ? 'Cancel' : 'New Event'}
+              </button>
+            )}
+          </div>
+        )}
       </div>
 
       {/* Tabs */}
@@ -84,7 +140,10 @@ export function CampusInfo() {
         <div className="border-b border-border">
           <nav className="-mb-px flex">
             <button
-              onClick={() => setActiveView('announcements')}
+              onClick={() => {
+                setActiveView('announcements');
+                setShowEventForm(false);
+              }}
               className={`flex items-center py-4 px-6 text-center text-sm font-medium border-b-2 ${
                 activeView === 'announcements'
                   ? 'border-blue-500 text-blue-600'
@@ -94,7 +153,10 @@ export function CampusInfo() {
               Announcements
             </button>
             <button
-              onClick={() => setActiveView('events')}
+              onClick={() => {
+                setActiveView('events');
+                setShowAnnouncementForm(false);
+              }}
               className={`flex items-center py-4 px-6 text-center text-sm font-medium border-b-2 ${
                 activeView === 'events'
                   ? 'border-blue-500 text-blue-600'
@@ -106,6 +168,24 @@ export function CampusInfo() {
           </nav>
         </div>
       </div>
+
+      {/* Create Announcement Form (Admin Only) */}
+      {isAdmin && showAnnouncementForm && activeView === 'announcements' && (
+        <AnnouncementForm
+          onSubmit={(data) => createAnnouncementMutation.mutate(data)}
+          onCancel={() => setShowAnnouncementForm(false)}
+          isLoading={createAnnouncementMutation.isPending}
+        />
+      )}
+
+      {/* Create Event Form (Admin Only) */}
+      {isAdmin && showEventForm && activeView === 'events' && (
+        <EventForm
+          onSubmit={(data) => createEventMutation.mutate(data)}
+          onCancel={() => setShowEventForm(false)}
+          isLoading={createEventMutation.isPending}
+        />
+      )}
 
       {/* Announcements View */}
       {activeView === 'announcements' && (
@@ -344,6 +424,374 @@ export function CampusInfo() {
           )}
         </div>
       )}
+    </div>
+  );
+}
+
+// Announcement Form Component
+function AnnouncementForm({ onSubmit, onCancel, isLoading }: { 
+  onSubmit: (data: any) => void; 
+  onCancel: () => void; 
+  isLoading: boolean;
+}) {
+  const [formData, setFormData] = useState({
+    title: '',
+    content: '',
+    type: 'GENERAL',
+    priority: 'NORMAL',
+    target_audience: ['ALL'],
+    publish_date: new Date().toISOString().split('T')[0],
+    expiry_date: '',
+    is_active: true,
+  });
+
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    const submitData = {
+      ...formData,
+      publish_date: formData.publish_date ? new Date(formData.publish_date).toISOString() : new Date().toISOString(),
+      expiry_date: formData.expiry_date ? new Date(formData.expiry_date).toISOString() : null,
+    };
+    onSubmit(submitData);
+  };
+
+  return (
+    <div className="bg-card rounded-lg shadow-lg p-6 mb-6">
+      <div className="flex items-center justify-between mb-4">
+        <h2 className="text-xl font-semibold text-foreground">Create New Announcement</h2>
+        <button
+          onClick={onCancel}
+          className="text-muted-foreground hover:text-foreground"
+        >
+          <X className="h-5 w-5" />
+        </button>
+      </div>
+      <form onSubmit={handleSubmit} className="space-y-4">
+        <div>
+          <label className="block text-sm font-medium text-foreground mb-1">
+            Title <span className="text-red-500">*</span>
+          </label>
+          <input
+            type="text"
+            required
+            value={formData.title}
+            onChange={(e) => setFormData({ ...formData, title: e.target.value })}
+            className="w-full px-3 py-2 border border-border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+          />
+        </div>
+
+        <div>
+          <label className="block text-sm font-medium text-foreground mb-1">
+            Content <span className="text-red-500">*</span>
+          </label>
+          <textarea
+            required
+            rows={6}
+            value={formData.content}
+            onChange={(e) => setFormData({ ...formData, content: e.target.value })}
+            className="w-full px-3 py-2 border border-border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+          />
+        </div>
+
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div>
+            <label className="block text-sm font-medium text-foreground mb-1">
+              Type <span className="text-red-500">*</span>
+            </label>
+            <select
+              required
+              value={formData.type}
+              onChange={(e) => setFormData({ ...formData, type: e.target.value })}
+              className="w-full px-3 py-2 border border-border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+            >
+              <option value="GENERAL">General</option>
+              <option value="ACADEMIC">Academic</option>
+              <option value="ADMINISTRATIVE">Administrative</option>
+              <option value="EVENT">Event</option>
+              <option value="EMERGENCY">Emergency</option>
+            </select>
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-foreground mb-1">
+              Priority
+            </label>
+            <select
+              value={formData.priority}
+              onChange={(e) => setFormData({ ...formData, priority: e.target.value })}
+              className="w-full px-3 py-2 border border-border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+            >
+              <option value="LOW">Low</option>
+              <option value="NORMAL">Normal</option>
+              <option value="HIGH">High</option>
+              <option value="URGENT">Urgent</option>
+            </select>
+          </div>
+        </div>
+
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div>
+            <label className="block text-sm font-medium text-foreground mb-1">
+              Publish Date
+            </label>
+            <input
+              type="date"
+              value={formData.publish_date}
+              onChange={(e) => setFormData({ ...formData, publish_date: e.target.value })}
+              className="w-full px-3 py-2 border border-border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+            />
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-foreground mb-1">
+              Expiry Date (Optional)
+            </label>
+            <input
+              type="date"
+              value={formData.expiry_date}
+              onChange={(e) => setFormData({ ...formData, expiry_date: e.target.value })}
+              className="w-full px-3 py-2 border border-border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+            />
+          </div>
+        </div>
+
+        <div className="flex items-center">
+          <input
+            type="checkbox"
+            id="is_active"
+            checked={formData.is_active}
+            onChange={(e) => setFormData({ ...formData, is_active: e.target.checked })}
+            className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-border rounded"
+          />
+          <label htmlFor="is_active" className="ml-2 text-sm text-foreground">
+            Active (visible to users)
+          </label>
+        </div>
+
+        <div className="flex justify-end gap-2 pt-4">
+          <button
+            type="button"
+            onClick={onCancel}
+            className="px-4 py-2 border border-border rounded-md text-foreground hover:bg-muted"
+          >
+            Cancel
+          </button>
+          <button
+            type="submit"
+            disabled={isLoading}
+            className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed"
+          >
+            {isLoading ? 'Creating...' : 'Create Announcement'}
+          </button>
+        </div>
+      </form>
+    </div>
+  );
+}
+
+// Event Form Component
+function EventForm({ onSubmit, onCancel, isLoading }: { 
+  onSubmit: (data: any) => void; 
+  onCancel: () => void; 
+  isLoading: boolean;
+}) {
+  const [formData, setFormData] = useState({
+    title: '',
+    description: '',
+    location: '',
+    start_time: '',
+    end_time: '',
+    category: 'SOCIAL',
+    organizer: '',
+    registration_url: '',
+    capacity: '',
+    is_public: true,
+  });
+
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    const submitData = {
+      ...formData,
+      start_time: new Date(formData.start_time).toISOString(),
+      end_time: new Date(formData.end_time).toISOString(),
+      registration_url: formData.registration_url || null,
+      capacity: formData.capacity ? parseInt(formData.capacity) : null,
+    };
+    onSubmit(submitData);
+  };
+
+  return (
+    <div className="bg-card rounded-lg shadow-lg p-6 mb-6">
+      <div className="flex items-center justify-between mb-4">
+        <h2 className="text-xl font-semibold text-foreground">Create New Event</h2>
+        <button
+          onClick={onCancel}
+          className="text-muted-foreground hover:text-foreground"
+        >
+          <X className="h-5 w-5" />
+        </button>
+      </div>
+      <form onSubmit={handleSubmit} className="space-y-4">
+        <div>
+          <label className="block text-sm font-medium text-foreground mb-1">
+            Title <span className="text-red-500">*</span>
+          </label>
+          <input
+            type="text"
+            required
+            value={formData.title}
+            onChange={(e) => setFormData({ ...formData, title: e.target.value })}
+            className="w-full px-3 py-2 border border-border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+          />
+        </div>
+
+        <div>
+          <label className="block text-sm font-medium text-foreground mb-1">
+            Description <span className="text-red-500">*</span>
+          </label>
+          <textarea
+            required
+            rows={4}
+            value={formData.description}
+            onChange={(e) => setFormData({ ...formData, description: e.target.value })}
+            className="w-full px-3 py-2 border border-border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+          />
+        </div>
+
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div>
+            <label className="block text-sm font-medium text-foreground mb-1">
+              Location <span className="text-red-500">*</span>
+            </label>
+            <input
+              type="text"
+              required
+              value={formData.location}
+              onChange={(e) => setFormData({ ...formData, location: e.target.value })}
+              className="w-full px-3 py-2 border border-border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+            />
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-foreground mb-1">
+              Category <span className="text-red-500">*</span>
+            </label>
+            <select
+              required
+              value={formData.category}
+              onChange={(e) => setFormData({ ...formData, category: e.target.value })}
+              className="w-full px-3 py-2 border border-border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+            >
+              <option value="SOCIAL">Social</option>
+              <option value="ACADEMIC">Academic</option>
+              <option value="CULTURAL">Cultural</option>
+              <option value="SPORTS">Sports</option>
+              <option value="WORKSHOP">Workshop</option>
+              <option value="CAREER">Career</option>
+              <option value="OTHER">Other</option>
+            </select>
+          </div>
+        </div>
+
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div>
+            <label className="block text-sm font-medium text-foreground mb-1">
+              Start Time <span className="text-red-500">*</span>
+            </label>
+            <input
+              type="datetime-local"
+              required
+              value={formData.start_time}
+              onChange={(e) => setFormData({ ...formData, start_time: e.target.value })}
+              className="w-full px-3 py-2 border border-border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+            />
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-foreground mb-1">
+              End Time <span className="text-red-500">*</span>
+            </label>
+            <input
+              type="datetime-local"
+              required
+              value={formData.end_time}
+              onChange={(e) => setFormData({ ...formData, end_time: e.target.value })}
+              className="w-full px-3 py-2 border border-border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+            />
+          </div>
+        </div>
+
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div>
+            <label className="block text-sm font-medium text-foreground mb-1">
+              Organizer <span className="text-red-500">*</span>
+            </label>
+            <input
+              type="text"
+              required
+              value={formData.organizer}
+              onChange={(e) => setFormData({ ...formData, organizer: e.target.value })}
+              className="w-full px-3 py-2 border border-border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+            />
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-foreground mb-1">
+              Capacity (Optional)
+            </label>
+            <input
+              type="number"
+              min="1"
+              value={formData.capacity}
+              onChange={(e) => setFormData({ ...formData, capacity: e.target.value })}
+              className="w-full px-3 py-2 border border-border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+            />
+          </div>
+        </div>
+
+        <div>
+          <label className="block text-sm font-medium text-foreground mb-1">
+            Registration URL (Optional)
+          </label>
+          <input
+            type="url"
+            value={formData.registration_url}
+            onChange={(e) => setFormData({ ...formData, registration_url: e.target.value })}
+            className="w-full px-3 py-2 border border-border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+            placeholder="https://..."
+          />
+        </div>
+
+        <div className="flex items-center">
+          <input
+            type="checkbox"
+            id="is_public"
+            checked={formData.is_public}
+            onChange={(e) => setFormData({ ...formData, is_public: e.target.checked })}
+            className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-border rounded"
+          />
+          <label htmlFor="is_public" className="ml-2 text-sm text-foreground">
+            Public Event (visible to all users)
+          </label>
+        </div>
+
+        <div className="flex justify-end gap-2 pt-4">
+          <button
+            type="button"
+            onClick={onCancel}
+            className="px-4 py-2 border border-border rounded-md text-foreground hover:bg-muted"
+          >
+            Cancel
+          </button>
+          <button
+            type="submit"
+            disabled={isLoading}
+            className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed"
+          >
+            {isLoading ? 'Creating...' : 'Create Event'}
+          </button>
+        </div>
+      </form>
     </div>
   );
 }

@@ -34,7 +34,7 @@ const redisConfig = {
   },
   maxRetriesPerRequest: 3,
   enableReadyCheck: true,
-  enableOfflineQueue: false, // Don't queue commands when offline
+  enableOfflineQueue: true, // Queue commands when offline (allows graceful startup)
   lazyConnect: false, // Connect immediately
   connectTimeout: 10000, // 10 second connection timeout
   keepAlive: 30000, // 30 seconds

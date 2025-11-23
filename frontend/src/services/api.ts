@@ -85,6 +85,13 @@ export const enrollmentAPI = {
   drop: (enrollmentId: number) => api.delete(`/enrollments/${enrollmentId}`),
   getStatus: (jobId: string) => api.get(`/enrollments/status/${jobId}`),
   getWaitlist: (courseId: number) => api.get(`/enrollments/waitlist/${courseId}`),
+  getExamSchedules: (currentTermOnly?: boolean, allSchedules?: boolean) =>
+    api.get('/enrollments/exam-schedules', { 
+      params: { 
+        ...(currentTermOnly !== false ? { currentTermOnly: true } : {}),
+        ...(allSchedules ? { allSchedules: true } : {})
+      } 
+    }),
 };
 
 // Admin API
@@ -104,6 +111,7 @@ export const adminAPI = {
   getAllCourses: () => api.get('/admin/courses'),
   createCourse: (data: any) => api.post('/admin/courses', data),
   updateCourse: (id: number, data: any) => api.put(`/admin/courses/${id}`, data),
+  updateCourseDetails: (id: number, data: any) => api.put(`/admin/courses/${id}/details`, data),
   deleteCourse: (id: number) => api.delete(`/admin/courses/${id}`),
   getCourseEnrollments: (id: number) => api.get(`/admin/courses/${id}/enrollments`),
 
@@ -121,6 +129,14 @@ export const adminAPI = {
   // Reports
   getReports: () => api.get('/admin/reports'),
   exportReport: (type: string) => api.get(`/admin/reports/export/${type}`),
+
+  // Student Personal Info Management
+  getStudentPersonalInfo: (studentId: number) => api.get(`/admin/students/${studentId}/personal-info`),
+  updateStudentPersonalInfo: (studentId: number, data: any) => api.put(`/admin/students/${studentId}/personal-info`, data),
+
+  // Campus Information Management
+  createAnnouncement: (data: any) => api.post('/admin/announcements', data),
+  createEvent: (data: any) => api.post('/admin/events', data),
 };
 
 // Academic Records API
@@ -175,17 +191,6 @@ export const personalAPI = {
     postalCode?: string;
     country?: string;
   }) => api.put('/personal/address', data),
-};
-
-// Planning & Advising API
-export const planningAPI = {
-  getDegreeAudit: () => api.get('/planning/degree-audit'),
-  getRequirements: () => api.get('/planning/requirements'),
-  getProgress: () => api.get('/planning/progress'),
-  getAdvisor: () => api.get('/planning/advisor'),
-  getCoursePlan: () => api.get('/planning/plan'),
-  saveCoursePlan: (data: any) => api.post('/planning/plan', data),
-  getGraduationCheck: () => api.get('/planning/graduation-check'),
 };
 
 // Faculty Center API

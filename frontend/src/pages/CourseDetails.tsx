@@ -1,6 +1,7 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useParams, useNavigate, Link } from 'react-router-dom';
 import api from '../services/api';
+import { formatLocation } from '../utils/locationFormatter';
 import {
   ArrowLeft,
   Clock,
@@ -305,7 +306,7 @@ export function CourseDetails() {
                       </div>
                       <div className="flex items-center text-sm text-gray-600 dark:text-gray-400">
                         <MapPin className="w-4 h-4 mr-2" />
-                        {slot.location}
+                        {formatLocation(slot.location)}
                       </div>
                     </div>
                   ))

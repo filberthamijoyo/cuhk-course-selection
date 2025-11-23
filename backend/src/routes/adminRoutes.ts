@@ -2,7 +2,11 @@ import { Router } from 'express';
 import {
   // Course Management
   createCourse,
+  getAllCourses,
+  getCourseById,
   updateCourse,
+  updateCourseDetails,
+  updateCourseTimeSlots,
   deleteCourse,
   getCourseEnrollments,
   // Student Management
@@ -12,6 +16,8 @@ import {
   updateStudent,
   updateStudentStatus,
   deleteStudent,
+  getStudentPersonalInfo,
+  updateStudentPersonalInfo,
   // Enrollment Management
   getEnrollments,
   getPendingEnrollments,
@@ -27,6 +33,11 @@ import {
   publishGrades,
   // User Management
   getAllUsers,
+  getUserById,
+  updateUser,
+  updateUserPersonalInfo,
+  updateUserStudentInfo,
+  updateUserFacultyInfo,
   // Statistics
   getSystemStatistics,
   getEnrollmentStatistics,
@@ -37,8 +48,6 @@ import {
   promoteFromWaitlist,
   // Conflict Detection
   checkConflicts,
-  // Degree Audit
-  getDegreeAudit,
   // Program Management
   getPrograms,
   getProgramById,
@@ -56,6 +65,9 @@ import {
   getAcademicTerms,
   createAcademicTerm,
   updateAcademicTerm,
+  // Campus Information
+  createAnnouncement,
+  createEvent,
 } from '../controllers/adminController';
 import { authenticate, requireAdmin } from '../middleware/auth';
 import { adminLimiter } from '../middleware/rateLimiter';
@@ -82,11 +94,39 @@ router.use(adminLimiter);
 router.post('/courses', asyncHandler(createCourse));
 
 /**
+ * @route   GET /api/admin/courses
+ * @desc    Get all courses with full details
+ * @access  Private (Admin)
+ */
+router.get('/courses', asyncHandler(getAllCourses));
+
+/**
+ * @route   GET /api/admin/courses/:id
+ * @desc    Get course by ID with full details
+ * @access  Private (Admin)
+ */
+router.get('/courses/:id', asyncHandler(getCourseById));
+
+/**
  * @route   PUT /api/admin/courses/:id
- * @desc    Update course
+ * @desc    Update course basic information
  * @access  Private (Admin)
  */
 router.put('/courses/:id', asyncHandler(updateCourse));
+
+/**
+ * @route   PUT /api/admin/courses/:id/details
+ * @desc    Update course comprehensive details (code, name, instructor, etc.)
+ * @access  Private (Admin)
+ */
+router.put('/courses/:id/details', asyncHandler(updateCourseDetails));
+
+/**
+ * @route   PUT /api/admin/courses/:id/time-slots
+ * @desc    Update course time slots
+ * @access  Private (Admin)
+ */
+router.put('/courses/:id/time-slots', asyncHandler(updateCourseTimeSlots));
 
 /**
  * @route   DELETE /api/admin/courses/:id
@@ -149,6 +189,20 @@ router.put('/students/:id/status', asyncHandler(updateStudentStatus));
  * @access  Private (Admin)
  */
 router.delete('/students/:id', asyncHandler(deleteStudent));
+
+/**
+ * @route   GET /api/admin/students/:id/personal-info
+ * @desc    Get student personal information
+ * @access  Private (Admin)
+ */
+router.get('/students/:id/personal-info', asyncHandler(getStudentPersonalInfo));
+
+/**
+ * @route   PUT /api/admin/students/:id/personal-info
+ * @desc    Update student personal information
+ * @access  Private (Admin)
+ */
+router.put('/students/:id/personal-info', asyncHandler(updateStudentPersonalInfo));
 
 /**
  * ================
@@ -253,6 +307,41 @@ router.post('/grades/publish', asyncHandler(publishGrades));
 router.get('/users', asyncHandler(getAllUsers));
 
 /**
+ * @route   GET /api/admin/users/:id
+ * @desc    Get user by ID with full details (including personal info, student/faculty info)
+ * @access  Private (Admin)
+ */
+router.get('/users/:id', asyncHandler(getUserById));
+
+/**
+ * @route   PUT /api/admin/users/:id
+ * @desc    Update user basic information (name, email, identifier, role, etc.)
+ * @access  Private (Admin)
+ */
+router.put('/users/:id', asyncHandler(updateUser));
+
+/**
+ * @route   PUT /api/admin/users/:id/personal-info
+ * @desc    Update user personal information (contact, address, emergency contacts, etc.)
+ * @access  Private (Admin)
+ */
+router.put('/users/:id/personal-info', asyncHandler(updateUserPersonalInfo));
+
+/**
+ * @route   PUT /api/admin/users/:id/student-info
+ * @desc    Update student-specific information (student ID, major, advisor, year, etc.)
+ * @access  Private (Admin)
+ */
+router.put('/users/:id/student-info', asyncHandler(updateUserStudentInfo));
+
+/**
+ * @route   PUT /api/admin/users/:id/faculty-info
+ * @desc    Update faculty-specific information (employee ID, title, office, research areas, etc.)
+ * @access  Private (Admin)
+ */
+router.put('/users/:id/faculty-info', asyncHandler(updateUserFacultyInfo));
+
+/**
  * ================
  * STATISTICS & ANALYTICS
  * ================
@@ -330,7 +419,6 @@ router.post('/conflicts/check', asyncHandler(checkConflicts));
  * @desc    Get degree audit for student
  * @access  Private (Admin)
  */
-router.get('/students/:id/degree-audit', asyncHandler(getDegreeAudit));
 
 /**
  * ================
@@ -445,5 +533,25 @@ router.post('/calendar/terms', asyncHandler(createAcademicTerm));
  * @access  Private (Admin)
  */
 router.put('/calendar/terms/:id', asyncHandler(updateAcademicTerm));
+
+/**
+ * ================
+ * CAMPUS INFORMATION
+ * ================
+ */
+
+/**
+ * @route   POST /api/admin/announcements
+ * @desc    Create a new announcement
+ * @access  Private (Admin)
+ */
+router.post('/announcements', asyncHandler(createAnnouncement));
+
+/**
+ * @route   POST /api/admin/events
+ * @desc    Create a new event
+ * @access  Private (Admin)
+ */
+router.post('/events', asyncHandler(createEvent));
 
 export default router;

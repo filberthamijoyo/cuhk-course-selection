@@ -24,7 +24,6 @@ export function Layout({ children }: LayoutProps) {
     { path: '/academic/transcript', label: 'Transcript' },
     { path: '/financial', label: 'Financial' },
     { path: '/personal', label: 'Personal Info' },
-    { path: '/planning', label: 'Degree Planning' },
     { path: '/applications', label: 'Applications' },
     { path: '/campus', label: 'Campus Info' },
     { path: '/academic-calendar', label: 'Academic Calendar' },

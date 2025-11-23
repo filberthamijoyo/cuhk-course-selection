@@ -24,14 +24,15 @@ interface AddDropCourseProps {
     major?: string;
     yearLevel?: number;
   };
+  initialTab?: TabType;
 }
 
 type TabType = 'add' | 'drop' | 'requests';
 
-const AddDropCourse: React.FC<AddDropCourseProps> = ({ currentUser }) => {
+const AddDropCourse: React.FC<AddDropCourseProps> = ({ currentUser, initialTab = 'add' }) => {
   const [enrolledCourses, setEnrolledCourses] = useState<Course[]>([]);
   const [availableCourses, setAvailableCourses] = useState<Course[]>([]);
-  const [activeTab, setActiveTab] = useState<TabType>('add');
+  const [activeTab, setActiveTab] = useState<TabType>(initialTab);
   const [myRequests, setMyRequests] = useState<AddDropRequest[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -55,6 +56,10 @@ const AddDropCourse: React.FC<AddDropCourseProps> = ({ currentUser }) => {
     loadMyRequests();
     loadCourses();
   }, []);
+
+  useEffect(() => {
+    setActiveTab(initialTab);
+  }, [initialTab]);
 
   const checkAddDropStatus = async () => {
     try {

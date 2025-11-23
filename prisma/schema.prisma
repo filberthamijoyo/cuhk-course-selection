@@ -69,6 +69,7 @@ model Course {
   instructor               User?                      @relation("InstructorCourses", fields: [instructorId], references: [id])
   enrollments              Enrollment[]
   timeSlots                TimeSlot[]
+  examSchedules            ExamSchedule[]
 
   @@index([courseCode])
   @@index([department])
@@ -91,6 +92,28 @@ model TimeSlot {
   @@index([courseId])
   @@index([dayOfWeek])
   @@map("time_slots")
+}
+
+model ExamSchedule {
+  id          Int       @id @default(autoincrement())
+  courseId    Int?      @map("course_id")
+  courseCode  String    @map("course_code")
+  courseName  String    @map("course_name")
+  examDate    DateTime  @map("exam_date")
+  startTime   String    @map("start_time")
+  endTime     String    @map("end_time")
+  location    String?
+  term        String
+  year        Int
+  createdAt   DateTime  @default(now()) @map("created_at")
+  updatedAt   DateTime  @updatedAt @map("updated_at")
+  course      Course?   @relation(fields: [courseId], references: [id], onDelete: Cascade)
+
+  @@index([courseId])
+  @@index([courseCode])
+  @@index([examDate])
+  @@index([term, year])
+  @@map("exam_schedules")
 }
 
 model Enrollment {

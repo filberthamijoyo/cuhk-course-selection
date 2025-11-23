@@ -3,6 +3,7 @@ import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { Award } from 'lucide-react';
 import api from '../services/api';
 import { useAuth } from '../context/AuthContext';
+import { formatLocation } from '../utils/locationFormatter';
 
 interface CourseCardProps {
   course: {
@@ -199,7 +200,7 @@ export function CourseCard({ course }: CourseCardProps) {
                 className="text-sm text-muted-foreground bg-muted/50 px-3 py-2 rounded"
               >
                 <span className="font-medium">{slot.dayOfWeek}</span> {slot.startTime} -{' '}
-                {slot.endTime} • {slot.location}
+                {slot.endTime} • {formatLocation(slot.location)}
               </div>
             ))}
           </div>

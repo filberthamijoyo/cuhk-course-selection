@@ -53,7 +53,7 @@ export async function createRequest(req: AuthRequest, res: Response) {
       });
     }
 
-    // Validate GPA requirements (GPA >= 2.0 recommended, or units_completed >= 6)
+    // Extract GPA and units completed (no minimum GPA requirement for declaring a major)
     const studentGPA = gpa !== undefined ? parseFloat(gpa) : 0;
     const completedUnits = units_completed !== undefined ? parseInt(units_completed) : 0;
 
@@ -117,14 +117,18 @@ export async function getMyRequests(req: Request, res: Response) {
   try {
     const { studentId } = req.params;
 
+    if (!studentId || isNaN(parseInt(studentId))) {
+      return res.status(400).json({
+        success: false,
+        error: 'Invalid student ID',
+      });
+    }
+
     const queryText = `
       SELECT
         r.*,
-        u.full_name as approver_name
+        NULL as approver_name
       FROM major_change_requests r
-      LEFT JOIN users u ON r.decision_date IS NOT NULL AND EXISTS (
-        SELECT 1 FROM users WHERE role IN ('ADMIN', 'INSTRUCTOR') LIMIT 1
-      )
       WHERE r.student_id = $1
       ORDER BY r.request_date DESC
     `;
@@ -135,11 +139,12 @@ export async function getMyRequests(req: Request, res: Response) {
       success: true,
       data: result.rows,
     });
-  } catch (error) {
+  } catch (error: any) {
     console.error('Get my major change requests error:', error);
     res.status(500).json({
       success: false,
       error: 'Failed to fetch major change requests',
+      details: process.env.NODE_ENV === 'development' ? error.message : undefined,
     });
   }
 }

@@ -176,12 +176,6 @@ export async function withdrawApplication(req: AuthRequest, res: Response) {
  */
 export async function getPendingApplications(req: AuthRequest, res: Response) {
   try {
-    const user = req.user!;
-
-    if (user.role !== 'administrator') {
-      throw new AppError('Unauthorized', 403);
-    }
-
     const applications = await prisma.applications.findMany({
       where: {
         status: {
@@ -239,10 +233,6 @@ export async function reviewApplication(req: AuthRequest, res: Response) {
     const user = req.user!;
     const { id } = req.params;
     const { status, decision, reviewNotes } = req.body;
-
-    if (user.role !== 'administrator') {
-      throw new AppError('Unauthorized', 403);
-    }
 
     if (!status || !decision) {
       throw new AppError('Status and decision are required', 400);

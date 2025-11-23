@@ -2,7 +2,13 @@ import React from 'react';
 import { useAuth } from '../context/AuthContext';
 import AddDropCourse from '../components/AddDropCourse';
 
-const AddDropPage: React.FC = () => {
+type AddDropTab = 'add' | 'drop' | 'requests';
+
+interface AddDropPageProps {
+  initialTab?: AddDropTab;
+}
+
+const AddDropPage: React.FC<AddDropPageProps> = ({ initialTab = 'add' }) => {
   const { user, isLoading } = useAuth();
 
   if (isLoading) {
@@ -41,7 +47,7 @@ const AddDropPage: React.FC = () => {
         </div>
 
         {/* Add/Drop Component */}
-        <AddDropCourse currentUser={user} />
+        <AddDropCourse currentUser={user} initialTab={initialTab} />
       </div>
     </div>
   );

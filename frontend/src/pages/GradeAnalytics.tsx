@@ -1,6 +1,7 @@
 import { useQuery } from '@tanstack/react-query';
 import { TrendingUp, TrendingDown, Award, AlertCircle, BarChart3 } from 'lucide-react';
 import { academicAPI } from '../services/api';
+import { formatTermString, sortTermsChronologically } from '../utils/semesterFormatter';
 
 interface GradeData {
   courseCode: string;
@@ -42,18 +43,35 @@ export function GradeAnalytics() {
     return acc;
   }, {}) || {};
 
-  Object.entries(gradesByTerm).forEach(([term, grades]: [string, any]) => {
-    const publishedGrades = grades.filter((g: GradeData) => g.status === 'PUBLISHED');
-    if (publishedGrades.length > 0) {
-      const totalPoints = publishedGrades.reduce((sum: number, g: GradeData) => sum + (g.gradePoints || 0), 0);
-      const totalCredits = publishedGrades.reduce((sum: number, g: GradeData) => sum + g.credits, 0);
-      gpaHistory.push({
-        term,
-        gpa: totalPoints / publishedGrades.length,
-        credits: totalCredits,
-      });
-    }
-  });
+  Object.entries(gradesByTerm)
+    .sort(([termA], [termB]) => sortTermsChronologically(termA, termB))
+    .forEach(([term, grades]: [string, any]) => {
+      // Filter published grades and exclude withdrawn courses
+      const publishedGrades = grades.filter((g: GradeData) => 
+        g.status === 'PUBLISHED' && 
+        g.gradePoints !== null && 
+        g.gradePoints !== undefined &&
+        g.letterGrade?.toUpperCase() !== 'W'
+      );
+      
+      if (publishedGrades.length > 0) {
+        // Calculate GPA using quality points weighted by credits
+        const totalQualityPoints = publishedGrades.reduce(
+          (sum: number, g: GradeData) => sum + (g.gradePoints || 0) * (g.credits || 0),
+          0
+        );
+        const totalCredits = publishedGrades.reduce((sum: number, g: GradeData) => sum + (g.credits || 0), 0);
+        const termGPA = totalCredits > 0 ? totalQualityPoints / totalCredits : 0;
+        
+        if (termGPA > 0) {
+          gpaHistory.push({
+            term,
+            gpa: termGPA,
+            credits: totalCredits,
+          });
+        }
+      }
+    });
 
   // Calculate grade distribution
   const gradeDistribution = gradesData?.reduce((acc: any, grade: GradeData) => {
@@ -64,14 +82,28 @@ export function GradeAnalytics() {
     return acc;
   }, {}) || {};
 
-  // Find best and worst performing courses
-  const publishedGrades = gradesData?.filter((g: GradeData) => g.status === 'PUBLISHED') || [];
+  // Find best and worst performing courses (only published grades with numeric values)
+  const publishedGrades = gradesData?.filter((g: GradeData) => 
+    g.status === 'PUBLISHED' && 
+    g.numericGrade !== null && 
+    g.numericGrade !== undefined &&
+    g.letterGrade?.toUpperCase() !== 'W'
+  ) || [];
+  
   const bestCourses = [...publishedGrades]
+    .filter((g: GradeData) => g.numericGrade !== null && g.numericGrade !== undefined)
     .sort((a, b) => (b.numericGrade || 0) - (a.numericGrade || 0))
     .slice(0, 5);
+    
   const worstCourses = [...publishedGrades]
+    .filter((g: GradeData) => g.numericGrade !== null && g.numericGrade !== undefined)
     .sort((a, b) => (a.numericGrade || 0) - (b.numericGrade || 0))
     .slice(0, 5);
+
+  // Calculate current term GPA from most recent term
+  const currentTermGPA = gpaHistory.length > 0 
+    ? gpaHistory[gpaHistory.length - 1].gpa 
+    : null;
 
   // Calculate GPA trend (increasing, decreasing, stable)
   const trend = gpaHistory.length >= 2
@@ -79,6 +111,7 @@ export function GradeAnalytics() {
     : 0;
 
   const getGradeColor = (letterGrade: string) => {
+    if (!letterGrade) return 'bg-gray-500 dark:bg-gray-600';
     if (letterGrade.startsWith('A')) return 'bg-green-500 dark:bg-green-600';
     if (letterGrade.startsWith('B')) return 'bg-blue-500 dark:bg-blue-600';
     if (letterGrade.startsWith('C')) return 'bg-yellow-500 dark:bg-yellow-600';
@@ -88,6 +121,7 @@ export function GradeAnalytics() {
   };
 
   const getLetterGradeColor = (letterGrade: string) => {
+    if (!letterGrade) return 'text-muted-foreground';
     if (letterGrade.startsWith('A')) return 'text-green-600 dark:text-green-400';
     if (letterGrade.startsWith('B')) return 'text-blue-600 dark:text-blue-400';
     if (letterGrade.startsWith('C')) return 'text-yellow-600 dark:text-yellow-400';
@@ -120,7 +154,7 @@ export function GradeAnalytics() {
         <div className="bg-gradient-to-br from-blue-500 to-blue-600 rounded-lg shadow-lg p-6 text-white">
           <div className="text-sm font-medium opacity-90">Cumulative GPA</div>
           <div className="mt-2 text-4xl font-bold">
-            {gpaData?.cumulativeGPA.toFixed(2) || '—'}
+            {gpaData?.cumulativeGPA?.toFixed(2) || '—'}
           </div>
           <div className="mt-1 text-sm opacity-90">{gpaData?.academicStanding}</div>
         </div>
@@ -128,7 +162,7 @@ export function GradeAnalytics() {
         <div className="bg-card border border-border rounded-lg shadow p-6">
           <div className="text-sm font-medium text-muted-foreground">Current Term GPA</div>
           <div className="mt-2 text-3xl font-bold text-foreground">
-            {gpaData?.currentTermGPA.toFixed(2) || '—'}
+            {currentTermGPA !== null ? currentTermGPA.toFixed(2) : '—'}
           </div>
           <div className="mt-2 flex items-center gap-1 text-sm">
             {trend > 0 ? (
@@ -174,19 +208,30 @@ export function GradeAnalytics() {
             <div className="h-64 flex items-end gap-2">
               {gpaHistory.map((item, index) => {
                 const maxGPA = 4.0;
-                const height = (item.gpa / maxGPA) * 100;
+                const validGPA = item.gpa && !isNaN(item.gpa) && isFinite(item.gpa) ? item.gpa : 0;
+                const height = Math.max((validGPA / maxGPA) * 100, 2); // Minimum 2% height for visibility
                 return (
                   <div key={index} className="flex-1 flex flex-col items-center gap-2">
                     <div className="text-xs font-medium text-foreground">
-                      {item.gpa.toFixed(2)}
+                      {validGPA > 0 ? validGPA.toFixed(2) : '—'}
                     </div>
                     <div
                       className="w-full bg-gradient-to-t from-primary to-primary/70 rounded-t-lg transition-all hover:opacity-80 cursor-pointer"
-                      style={{ height: `${height}%` }}
-                      title={`${item.term}: ${item.gpa.toFixed(2)} GPA`}
+                      style={{ height: `${height}%`, minHeight: '4px' }}
+                      title={`${formatTermString(item.term)}: ${validGPA > 0 ? validGPA.toFixed(2) : 'N/A'} GPA`}
                     ></div>
                     <div className="text-xs text-muted-foreground text-center break-words w-full">
-                      {item.term.split(' ')[0].substring(0, 3)} '{item.term.split(' ')[1].substring(2)}
+                      {(() => {
+                        const formatted = formatTermString(item.term);
+                        const parts = formatted.split(' ');
+                        if (parts.length >= 2) {
+                          // Extract "Term 1" or "Term 2" and year
+                          const termPart = parts[0] === 'Term' ? `T${parts[1]}` : parts[0];
+                          const year = parts[parts.length - 1];
+                          return `${termPart} '${year.substring(2)}`;
+                        }
+                        return formatted;
+                      })()}
                     </div>
                   </div>
                 );
@@ -262,24 +307,26 @@ export function GradeAnalytics() {
             <div className="space-y-3">
               {bestCourses.map((course, index) => (
                 <div
-                  key={index}
+                  key={`${course.courseCode}-${index}`}
                   className="flex items-center justify-between p-3 bg-muted/50 rounded-lg hover:bg-muted transition-colors"
                 >
                   <div className="flex-1 min-w-0">
                     <div className="font-medium text-foreground truncate">
-                      {course.courseCode}
+                      {course.courseCode || 'N/A'}
                     </div>
                     <div className="text-sm text-muted-foreground truncate">
-                      {course.courseName}
+                      {course.courseName || 'N/A'}
                     </div>
                   </div>
                   <div className="flex items-center gap-3 ml-4">
                     <div className="text-right">
-                      <div className={`text-lg font-bold ${getLetterGradeColor(course.letterGrade)}`}>
-                        {course.letterGrade}
+                      <div className={`text-lg font-bold ${getLetterGradeColor(course.letterGrade || '')}`}>
+                        {course.letterGrade || '—'}
                       </div>
                       <div className="text-xs text-muted-foreground">
-                        {course.numericGrade?.toFixed(1)}
+                        {course.numericGrade !== null && course.numericGrade !== undefined 
+                          ? course.numericGrade.toFixed(1) 
+                          : '—'}
                       </div>
                     </div>
                   </div>
@@ -304,24 +351,26 @@ export function GradeAnalytics() {
             <div className="space-y-3">
               {worstCourses.map((course, index) => (
                 <div
-                  key={index}
+                  key={`${course.courseCode}-${index}`}
                   className="flex items-center justify-between p-3 bg-muted/50 rounded-lg hover:bg-muted transition-colors"
                 >
                   <div className="flex-1 min-w-0">
                     <div className="font-medium text-foreground truncate">
-                      {course.courseCode}
+                      {course.courseCode || 'N/A'}
                     </div>
                     <div className="text-sm text-muted-foreground truncate">
-                      {course.courseName}
+                      {course.courseName || 'N/A'}
                     </div>
                   </div>
                   <div className="flex items-center gap-3 ml-4">
                     <div className="text-right">
-                      <div className={`text-lg font-bold ${getLetterGradeColor(course.letterGrade)}`}>
-                        {course.letterGrade}
+                      <div className={`text-lg font-bold ${getLetterGradeColor(course.letterGrade || '')}`}>
+                        {course.letterGrade || '—'}
                       </div>
                       <div className="text-xs text-muted-foreground">
-                        {course.numericGrade?.toFixed(1)}
+                        {course.numericGrade !== null && course.numericGrade !== undefined 
+                          ? course.numericGrade.toFixed(1) 
+                          : '—'}
                       </div>
                     </div>
                   </div>

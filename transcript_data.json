@@ -1,0 +1,847 @@
+{
+  "courses": [
+    {
+      "course_code": "CLC1201",
+      "course_name": "Basic Chinese 3.0",
+      "credits": 3,
+      "letter_grade": "B",
+      "numeric_grade": 3.0,
+      "semester": "FALL",
+      "year": 2022,
+      "grade_points": 3.0
+    },
+    {
+      "course_code": "CSC1003",
+      "course_name": "Introduction to Computer Science and Java Programming 3.0",
+      "credits": 3,
+      "letter_grade": "C",
+      "numeric_grade": 3.0,
+      "semester": "FALL",
+      "year": 2022,
+      "grade_points": 2.0
+    },
+    {
+      "course_code": "ENG1001",
+      "course_name": "English Bridge Program (EBP) 3.0",
+      "credits": 3,
+      "letter_grade": "C",
+      "numeric_grade": 3.0,
+      "semester": "FALL",
+      "year": 2022,
+      "grade_points": 2.0
+    },
+    {
+      "course_code": "MAT1001",
+      "course_name": "Calculus",
+      "credits": 3,
+      "letter_grade": "I",
+      "numeric_grade": 3.0,
+      "semester": "FALL",
+      "year": 2022,
+      "grade_points": null
+    },
+    {
+      "course_code": "MAT2041",
+      "course_name": "Linear Algebra and Applications 3.0",
+      "credits": 3,
+      "letter_grade": "D",
+      "numeric_grade": 3.0,
+      "semester": "FALL",
+      "year": 2022,
+      "grade_points": 1.0
+    },
+    {
+      "course_code": "PED1001",
+      "course_name": "Physical Education 1.0",
+      "credits": 1,
+      "letter_grade": "B",
+      "numeric_grade": 1.0,
+      "semester": "FALL",
+      "year": 2022,
+      "grade_points": 3.0
+    },
+    {
+      "course_code": "CSC1004",
+      "course_name": "Computational Laboratory Using Java 1.0",
+      "credits": 1,
+      "letter_grade": "B",
+      "numeric_grade": 1.0,
+      "semester": "FALL",
+      "year": 2022,
+      "grade_points": 3.0
+    },
+    {
+      "course_code": "DDA2001",
+      "course_name": "Introduction to Data Science 3.0 PA N/",
+      "credits": 3,
+      "letter_grade": "A",
+      "numeric_grade": 3.0,
+      "semester": "FALL",
+      "year": 2022,
+      "grade_points": 4.0
+    },
+    {
+      "course_code": "ENG1002",
+      "course_name": "English for Academic Purposes",
+      "credits": 3,
+      "letter_grade": "I",
+      "numeric_grade": 3.0,
+      "semester": "FALL",
+      "year": 2022,
+      "grade_points": null
+    },
+    {
+      "course_code": "GFH1000",
+      "course_name": "In Dialogue with Humanity 3.0",
+      "credits": 3,
+      "letter_grade": "A",
+      "numeric_grade": 3.0,
+      "semester": "FALL",
+      "year": 2022,
+      "grade_points": 4.0
+    },
+    {
+      "course_code": "ITE1000",
+      "course_name": "Information Technology 1.0 PA N/",
+      "credits": 1,
+      "letter_grade": "A",
+      "numeric_grade": 1.0,
+      "semester": "FALL",
+      "year": 2022,
+      "grade_points": 4.0
+    },
+    {
+      "course_code": "MAT1002",
+      "course_name": "Calculus II 3.0",
+      "credits": 3,
+      "letter_grade": "C",
+      "numeric_grade": 3.0,
+      "semester": "FALL",
+      "year": 2022,
+      "grade_points": 2.0
+    },
+    {
+      "course_code": "PED1002",
+      "course_name": "Fitness and Health 1.0",
+      "credits": 1,
+      "letter_grade": "A",
+      "numeric_grade": 1.0,
+      "semester": "FALL",
+      "year": 2022,
+      "grade_points": 4.0
+    },
+    {
+      "course_code": "PHY1001",
+      "course_name": "Mechanics 3.0",
+      "credits": 3,
+      "letter_grade": "B",
+      "numeric_grade": 3.0,
+      "semester": "FALL",
+      "year": 2022,
+      "grade_points": 3.0
+    },
+    {
+      "course_code": "STA2001",
+      "course_name": "Probability and Statistics",
+      "credits": 3,
+      "letter_grade": "I",
+      "numeric_grade": 3.0,
+      "semester": "FALL",
+      "year": 2022,
+      "grade_points": null
+    },
+    {
+      "course_code": "CSC3001",
+      "course_name": "Discrete Mathematics 3.0",
+      "credits": 3,
+      "letter_grade": "B",
+      "numeric_grade": 3.0,
+      "semester": "FALL",
+      "year": 2022,
+      "grade_points": 3.0
+    },
+    {
+      "course_code": "CSC3002",
+      "course_name": "",
+      "credits": 3,
+      "letter_grade": "C",
+      "numeric_grade": 3.0,
+      "semester": "FALL",
+      "year": 2022,
+      "grade_points": 2.0
+    },
+    {
+      "course_code": "ENG2001",
+      "course_name": "English for Academic Purposes II 3.0",
+      "credits": 3,
+      "letter_grade": "A",
+      "numeric_grade": 3.0,
+      "semester": "FALL",
+      "year": 2022,
+      "grade_points": 4.0
+    },
+    {
+      "course_code": "GEC3407",
+      "course_name": "The World as",
+      "credits": 3,
+      "letter_grade": "A",
+      "numeric_grade": 3.0,
+      "semester": "FALL",
+      "year": 2022,
+      "grade_points": 4.0
+    },
+    {
+      "course_code": "GFN1000",
+      "course_name": "In Dialogue with Nature 3.0",
+      "credits": 3,
+      "letter_grade": "B",
+      "numeric_grade": 3.0,
+      "semester": "FALL",
+      "year": 2022,
+      "grade_points": 3.0
+    },
+    {
+      "course_code": "CLC1301",
+      "course_name": "Intermediate Chinese 3.0",
+      "credits": 3,
+      "letter_grade": "B",
+      "numeric_grade": 3.0,
+      "semester": "FALL",
+      "year": 2022,
+      "grade_points": 3.0
+    },
+    {
+      "course_code": "CSC3100",
+      "course_name": "Data Structures 3.0",
+      "credits": 3,
+      "letter_grade": "B",
+      "numeric_grade": 3.0,
+      "semester": "FALL",
+      "year": 2022,
+      "grade_points": 3.0
+    },
+    {
+      "course_code": "ECE2050",
+      "course_name": "Digital Logic and Systems 3.0",
+      "credits": 3,
+      "letter_grade": "B",
+      "numeric_grade": 3.0,
+      "semester": "FALL",
+      "year": 2022,
+      "grade_points": 3.0
+    },
+    {
+      "course_code": "ENG2002S",
+      "course_name": "English for Science and Engineering Communication 3.0",
+      "credits": 3,
+      "letter_grade": "B",
+      "numeric_grade": 3.0,
+      "semester": "FALL",
+      "year": 2022,
+      "grade_points": 3.0
+    },
+    {
+      "course_code": "GED2119",
+      "course_name": "Environmental Humanities 3.0",
+      "credits": 3,
+      "letter_grade": "B",
+      "numeric_grade": 3.0,
+      "semester": "FALL",
+      "year": 2022,
+      "grade_points": 3.0
+    },
+    {
+      "course_code": "MAT3007",
+      "course_name": "Optimization 3.0",
+      "credits": 3,
+      "letter_grade": "B",
+      "numeric_grade": 3.0,
+      "semester": "FALL",
+      "year": 2022,
+      "grade_points": 3.0
+    },
+    {
+      "course_code": "BIO1008",
+      "course_name": "Chemistry and Life Sciences 3.0",
+      "credits": 3,
+      "letter_grade": "W",
+      "numeric_grade": 3.0,
+      "semester": "FALL",
+      "year": 2022,
+      "grade_points": null
+    },
+    {
+      "course_code": "CSC3050",
+      "course_name": "Computer Architecture 3.0",
+      "credits": 3,
+      "letter_grade": "A",
+      "numeric_grade": 3.0,
+      "semester": "FALL",
+      "year": 2022,
+      "grade_points": 4.0
+    },
+    {
+      "course_code": "CSC3150",
+      "course_name": "Operating System 3.0",
+      "credits": 3,
+      "letter_grade": "A",
+      "numeric_grade": 3.0,
+      "semester": "FALL",
+      "year": 2022,
+      "grade_points": 4.0
+    },
+    {
+      "course_code": "DDA3020",
+      "course_name": "Machine Learning 3.0",
+      "credits": 3,
+      "letter_grade": "B",
+      "numeric_grade": 3.0,
+      "semester": "FALL",
+      "year": 2022,
+      "grade_points": 3.0
+    },
+    {
+      "course_code": "GEA2000",
+      "course_name": "Modern Chinese History and Culture 3.0",
+      "credits": 3,
+      "letter_grade": "A",
+      "numeric_grade": 3.0,
+      "semester": "FALL",
+      "year": 2022,
+      "grade_points": 4.0
+    },
+    {
+      "course_code": "CSC3180",
+      "course_name": "Fundamentals of Artificial Intelligence 3.0",
+      "credits": 3,
+      "letter_grade": "A",
+      "numeric_grade": 3.0,
+      "semester": "FALL",
+      "year": 2022,
+      "grade_points": 4.0
+    },
+    {
+      "course_code": "CSC4001",
+      "course_name": "Software Engineering 3.0",
+      "credits": 3,
+      "letter_grade": "B",
+      "numeric_grade": 3.0,
+      "semester": "FALL",
+      "year": 2022,
+      "grade_points": 3.0
+    },
+    {
+      "course_code": "CSC4100",
+      "course_name": "Natural Language Processing 3.0",
+      "credits": 3,
+      "letter_grade": "B",
+      "numeric_grade": 3.0,
+      "semester": "FALL",
+      "year": 2022,
+      "grade_points": 3.0
+    },
+    {
+      "course_code": "DDA4210",
+      "course_name": "Advanced Machine Learning 3.0",
+      "credits": 3,
+      "letter_grade": "B",
+      "numeric_grade": 3.0,
+      "semester": "FALL",
+      "year": 2022,
+      "grade_points": 3.0
+    },
+    {
+      "course_code": "DDA4220",
+      "course_name": "Deep Learning and Applications 3.0",
+      "credits": 3,
+      "letter_grade": "B",
+      "numeric_grade": 3.0,
+      "semester": "FALL",
+      "year": 2022,
+      "grade_points": 3.0
+    },
+    {
+      "course_code": "AIE3901",
+      "course_name": "AI Practicum",
+      "credits": 2,
+      "letter_grade": "I",
+      "numeric_grade": 2.0,
+      "semester": "FALL",
+      "year": 2022,
+      "grade_points": null
+    },
+    {
+      "course_code": "BIO1008",
+      "course_name": "Chemistry and Life Sciences 3.0 IP 0.0",
+      "credits": 3,
+      "letter_grade": null,
+      "numeric_grade": 3.0,
+      "semester": "FALL",
+      "year": 2022
+    },
+    {
+      "course_code": "CSC3170",
+      "course_name": "Database System 3.0 IP 0.0",
+      "credits": 3,
+      "letter_grade": null,
+      "numeric_grade": 3.0,
+      "semester": "FALL",
+      "year": 2022
+    },
+    {
+      "course_code": "DDA4100",
+      "course_name": "Industrial Practices / Internship 3.0 IP N/",
+      "credits": 3,
+      "letter_grade": "A",
+      "numeric_grade": 3.0,
+      "semester": "FALL",
+      "year": 2022,
+      "grade_points": 4.0
+    },
+    {
+      "course_code": "DDA4230",
+      "course_name": "Reinforcement Learning 3.0 IP 0.0",
+      "credits": 3,
+      "letter_grade": null,
+      "numeric_grade": 3.0,
+      "semester": "FALL",
+      "year": 2022
+    },
+    {
+      "course_code": "STA4606",
+      "course_name": "Machine Learning for Biomedical Research 3.0 IP 0.0",
+      "credits": 3,
+      "letter_grade": null,
+      "numeric_grade": 3.0,
+      "semester": "FALL",
+      "year": 2022
+    }
+  ],
+  "terms": {
+    "2022-FALL": {
+      "courses": [
+        {
+          "course_code": "CLC1201",
+          "course_name": "Basic Chinese 3.0",
+          "credits": 3,
+          "letter_grade": "B",
+          "numeric_grade": 3.0,
+          "semester": "FALL",
+          "year": 2022,
+          "grade_points": 3.0
+        },
+        {
+          "course_code": "CSC1003",
+          "course_name": "Introduction to Computer Science and Java Programming 3.0",
+          "credits": 3,
+          "letter_grade": "C",
+          "numeric_grade": 3.0,
+          "semester": "FALL",
+          "year": 2022,
+          "grade_points": 2.0
+        },
+        {
+          "course_code": "ENG1001",
+          "course_name": "English Bridge Program (EBP) 3.0",
+          "credits": 3,
+          "letter_grade": "C",
+          "numeric_grade": 3.0,
+          "semester": "FALL",
+          "year": 2022,
+          "grade_points": 2.0
+        },
+        {
+          "course_code": "MAT1001",
+          "course_name": "Calculus",
+          "credits": 3,
+          "letter_grade": "I",
+          "numeric_grade": 3.0,
+          "semester": "FALL",
+          "year": 2022,
+          "grade_points": null
+        },
+        {
+          "course_code": "MAT2041",
+          "course_name": "Linear Algebra and Applications 3.0",
+          "credits": 3,
+          "letter_grade": "D",
+          "numeric_grade": 3.0,
+          "semester": "FALL",
+          "year": 2022,
+          "grade_points": 1.0
+        },
+        {
+          "course_code": "PED1001",
+          "course_name": "Physical Education 1.0",
+          "credits": 1,
+          "letter_grade": "B",
+          "numeric_grade": 1.0,
+          "semester": "FALL",
+          "year": 2022,
+          "grade_points": 3.0
+        },
+        {
+          "course_code": "CSC1004",
+          "course_name": "Computational Laboratory Using Java 1.0",
+          "credits": 1,
+          "letter_grade": "B",
+          "numeric_grade": 1.0,
+          "semester": "FALL",
+          "year": 2022,
+          "grade_points": 3.0
+        },
+        {
+          "course_code": "DDA2001",
+          "course_name": "Introduction to Data Science 3.0 PA N/",
+          "credits": 3,
+          "letter_grade": "A",
+          "numeric_grade": 3.0,
+          "semester": "FALL",
+          "year": 2022,
+          "grade_points": 4.0
+        },
+        {
+          "course_code": "ENG1002",
+          "course_name": "English for Academic Purposes",
+          "credits": 3,
+          "letter_grade": "I",
+          "numeric_grade": 3.0,
+          "semester": "FALL",
+          "year": 2022,
+          "grade_points": null
+        },
+        {
+          "course_code": "GFH1000",
+          "course_name": "In Dialogue with Humanity 3.0",
+          "credits": 3,
+          "letter_grade": "A",
+          "numeric_grade": 3.0,
+          "semester": "FALL",
+          "year": 2022,
+          "grade_points": 4.0
+        },
+        {
+          "course_code": "ITE1000",
+          "course_name": "Information Technology 1.0 PA N/",
+          "credits": 1,
+          "letter_grade": "A",
+          "numeric_grade": 1.0,
+          "semester": "FALL",
+          "year": 2022,
+          "grade_points": 4.0
+        },
+        {
+          "course_code": "MAT1002",
+          "course_name": "Calculus II 3.0",
+          "credits": 3,
+          "letter_grade": "C",
+          "numeric_grade": 3.0,
+          "semester": "FALL",
+          "year": 2022,
+          "grade_points": 2.0
+        },
+        {
+          "course_code": "PED1002",
+          "course_name": "Fitness and Health 1.0",
+          "credits": 1,
+          "letter_grade": "A",
+          "numeric_grade": 1.0,
+          "semester": "FALL",
+          "year": 2022,
+          "grade_points": 4.0
+        },
+        {
+          "course_code": "PHY1001",
+          "course_name": "Mechanics 3.0",
+          "credits": 3,
+          "letter_grade": "B",
+          "numeric_grade": 3.0,
+          "semester": "FALL",
+          "year": 2022,
+          "grade_points": 3.0
+        },
+        {
+          "course_code": "STA2001",
+          "course_name": "Probability and Statistics",
+          "credits": 3,
+          "letter_grade": "I",
+          "numeric_grade": 3.0,
+          "semester": "FALL",
+          "year": 2022,
+          "grade_points": null
+        },
+        {
+          "course_code": "CSC3001",
+          "course_name": "Discrete Mathematics 3.0",
+          "credits": 3,
+          "letter_grade": "B",
+          "numeric_grade": 3.0,
+          "semester": "FALL",
+          "year": 2022,
+          "grade_points": 3.0
+        },
+        {
+          "course_code": "CSC3002",
+          "course_name": "",
+          "credits": 3,
+          "letter_grade": "C",
+          "numeric_grade": 3.0,
+          "semester": "FALL",
+          "year": 2022,
+          "grade_points": 2.0
+        },
+        {
+          "course_code": "ENG2001",
+          "course_name": "English for Academic Purposes II 3.0",
+          "credits": 3,
+          "letter_grade": "A",
+          "numeric_grade": 3.0,
+          "semester": "FALL",
+          "year": 2022,
+          "grade_points": 4.0
+        },
+        {
+          "course_code": "GEC3407",
+          "course_name": "The World as",
+          "credits": 3,
+          "letter_grade": "A",
+          "numeric_grade": 3.0,
+          "semester": "FALL",
+          "year": 2022,
+          "grade_points": 4.0
+        },
+        {
+          "course_code": "GFN1000",
+          "course_name": "In Dialogue with Nature 3.0",
+          "credits": 3,
+          "letter_grade": "B",
+          "numeric_grade": 3.0,
+          "semester": "FALL",
+          "year": 2022,
+          "grade_points": 3.0
+        },
+        {
+          "course_code": "CLC1301",
+          "course_name": "Intermediate Chinese 3.0",
+          "credits": 3,
+          "letter_grade": "B",
+          "numeric_grade": 3.0,
+          "semester": "FALL",
+          "year": 2022,
+          "grade_points": 3.0
+        },
+        {
+          "course_code": "CSC3100",
+          "course_name": "Data Structures 3.0",
+          "credits": 3,
+          "letter_grade": "B",
+          "numeric_grade": 3.0,
+          "semester": "FALL",
+          "year": 2022,
+          "grade_points": 3.0
+        },
+        {
+          "course_code": "ECE2050",
+          "course_name": "Digital Logic and Systems 3.0",
+          "credits": 3,
+          "letter_grade": "B",
+          "numeric_grade": 3.0,
+          "semester": "FALL",
+          "year": 2022,
+          "grade_points": 3.0
+        },
+        {
+          "course_code": "ENG2002S",
+          "course_name": "English for Science and Engineering Communication 3.0",
+          "credits": 3,
+          "letter_grade": "B",
+          "numeric_grade": 3.0,
+          "semester": "FALL",
+          "year": 2022,
+          "grade_points": 3.0
+        },
+        {
+          "course_code": "GED2119",
+          "course_name": "Environmental Humanities 3.0",
+          "credits": 3,
+          "letter_grade": "B",
+          "numeric_grade": 3.0,
+          "semester": "FALL",
+          "year": 2022,
+          "grade_points": 3.0
+        },
+        {
+          "course_code": "MAT3007",
+          "course_name": "Optimization 3.0",
+          "credits": 3,
+          "letter_grade": "B",
+          "numeric_grade": 3.0,
+          "semester": "FALL",
+          "year": 2022,
+          "grade_points": 3.0
+        },
+        {
+          "course_code": "BIO1008",
+          "course_name": "Chemistry and Life Sciences 3.0",
+          "credits": 3,
+          "letter_grade": "W",
+          "numeric_grade": 3.0,
+          "semester": "FALL",
+          "year": 2022,
+          "grade_points": null
+        },
+        {
+          "course_code": "CSC3050",
+          "course_name": "Computer Architecture 3.0",
+          "credits": 3,
+          "letter_grade": "A",
+          "numeric_grade": 3.0,
+          "semester": "FALL",
+          "year": 2022,
+          "grade_points": 4.0
+        },
+        {
+          "course_code": "CSC3150",
+          "course_name": "Operating System 3.0",
+          "credits": 3,
+          "letter_grade": "A",
+          "numeric_grade": 3.0,
+          "semester": "FALL",
+          "year": 2022,
+          "grade_points": 4.0
+        },
+        {
+          "course_code": "DDA3020",
+          "course_name": "Machine Learning 3.0",
+          "credits": 3,
+          "letter_grade": "B",
+          "numeric_grade": 3.0,
+          "semester": "FALL",
+          "year": 2022,
+          "grade_points": 3.0
+        },
+        {
+          "course_code": "GEA2000",
+          "course_name": "Modern Chinese History and Culture 3.0",
+          "credits": 3,
+          "letter_grade": "A",
+          "numeric_grade": 3.0,
+          "semester": "FALL",
+          "year": 2022,
+          "grade_points": 4.0
+        },
+        {
+          "course_code": "CSC3180",
+          "course_name": "Fundamentals of Artificial Intelligence 3.0",
+          "credits": 3,
+          "letter_grade": "A",
+          "numeric_grade": 3.0,
+          "semester": "FALL",
+          "year": 2022,
+          "grade_points": 4.0
+        },
+        {
+          "course_code": "CSC4001",
+          "course_name": "Software Engineering 3.0",
+          "credits": 3,
+          "letter_grade": "B",
+          "numeric_grade": 3.0,
+          "semester": "FALL",
+          "year": 2022,
+          "grade_points": 3.0
+        },
+        {
+          "course_code": "CSC4100",
+          "course_name": "Natural Language Processing 3.0",
+          "credits": 3,
+          "letter_grade": "B",
+          "numeric_grade": 3.0,
+          "semester": "FALL",
+          "year": 2022,
+          "grade_points": 3.0
+        },
+        {
+          "course_code": "DDA4210",
+          "course_name": "Advanced Machine Learning 3.0",
+          "credits": 3,
+          "letter_grade": "B",
+          "numeric_grade": 3.0,
+          "semester": "FALL",
+          "year": 2022,
+          "grade_points": 3.0
+        },
+        {
+          "course_code": "DDA4220",
+          "course_name": "Deep Learning and Applications 3.0",
+          "credits": 3,
+          "letter_grade": "B",
+          "numeric_grade": 3.0,
+          "semester": "FALL",
+          "year": 2022,
+          "grade_points": 3.0
+        },
+        {
+          "course_code": "AIE3901",
+          "course_name": "AI Practicum",
+          "credits": 2,
+          "letter_grade": "I",
+          "numeric_grade": 2.0,
+          "semester": "FALL",
+          "year": 2022,
+          "grade_points": null
+        },
+        {
+          "course_code": "BIO1008",
+          "course_name": "Chemistry and Life Sciences 3.0 IP 0.0",
+          "credits": 3,
+          "letter_grade": null,
+          "numeric_grade": 3.0,
+          "semester": "FALL",
+          "year": 2022
+        },
+        {
+          "course_code": "CSC3170",
+          "course_name": "Database System 3.0 IP 0.0",
+          "credits": 3,
+          "letter_grade": null,
+          "numeric_grade": 3.0,
+          "semester": "FALL",
+          "year": 2022
+        },
+        {
+          "course_code": "DDA4100",
+          "course_name": "Industrial Practices / Internship 3.0 IP N/",
+          "credits": 3,
+          "letter_grade": "A",
+          "numeric_grade": 3.0,
+          "semester": "FALL",
+          "year": 2022,
+          "grade_points": 4.0
+        },
+        {
+          "course_code": "DDA4230",
+          "course_name": "Reinforcement Learning 3.0 IP 0.0",
+          "credits": 3,
+          "letter_grade": null,
+          "numeric_grade": 3.0,
+          "semester": "FALL",
+          "year": 2022
+        },
+        {
+          "course_code": "STA4606",
+          "course_name": "Machine Learning for Biomedical Research 3.0 IP 0.0",
+          "credits": 3,
+          "letter_grade": null,
+          "numeric_grade": 3.0,
+          "semester": "FALL",
+          "year": 2022
+        }
+      ],
+      "term_gpa": null
+    }
+  },
+  "metadata": {
+    "total_courses": 42,
+    "total_terms": 1
+  }
+}

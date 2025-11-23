@@ -42,7 +42,7 @@ export function Dashboard() {
                 >
                   <h4 className="font-semibold text-blue-900">Browse Courses</h4>
                   <p className="text-sm text-blue-700 mt-1">
-                    View all available courses for Fall 2025
+                    View all available courses for Term 1 2025
                   </p>
                 </Link>
                 <Link
