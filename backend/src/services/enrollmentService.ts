@@ -488,7 +488,11 @@ export async function getExamSchedules(userId: number, currentTermOnly: boolean 
 
   // Get exam schedules
   const { semester, year } = getCurrentTerm();
-  const term = `Term ${semester === Semester.FALL ? '1' : semester === Semester.SPRING ? '2' : '3'}`;
+  // Database uses format like "2025-26 Term 1", so we need to match that format
+  const termNumber = semester === Semester.FALL ? '1' : semester === Semester.SPRING ? '2' : '3';
+  // Construct academic year format (e.g., "2025-26" for year 2025)
+  const academicYearStr = `${year}-${String(year + 1).slice(-2)}`;
+  const term = `${academicYearStr} Term ${termNumber}`;
 
   const examSchedules = await (prisma as any).exam_schedules.findMany({
     where: {
@@ -497,8 +501,10 @@ export async function getExamSchedules(userId: number, currentTermOnly: boolean 
           in: courseCodes
         }
       }),
-      term: currentTermOnly ? term : undefined,
-      year: currentTermOnly ? year : undefined
+      ...(currentTermOnly ? {
+        term: term,
+        year: year
+      } : {})
     },
     orderBy: [
       { exam_date: 'asc' },
@@ -506,7 +512,17 @@ export async function getExamSchedules(userId: number, currentTermOnly: boolean 
     ]
   });
 
-  return examSchedules.map((exam: any) => ({
+  // Deduplicate: keep only the first exam schedule per course_code per term
+  // This handles cases where duplicate exam schedules exist in the database
+  const uniqueExams = new Map<string, any>();
+  for (const exam of examSchedules) {
+    const key = `${exam.course_code}_${exam.term}_${exam.year}`;
+    if (!uniqueExams.has(key)) {
+      uniqueExams.set(key, exam);
+    }
+  }
+
+  return Array.from(uniqueExams.values()).map((exam: any) => ({
     id: exam.id,
     courseCode: exam.course_code,
     courseName: exam.course_name,

@@ -43,6 +43,7 @@ export function StudentDashboard() {
   });
 
   // Get exam schedules for upcoming exams widget
+  // Show only exams for courses the student is enrolled in
   const { data: examSchedules } = useQuery({
     queryKey: ['exam-schedules', 'dashboard'],
     queryFn: async () => {
@@ -768,14 +769,13 @@ export function StudentDashboard() {
               ) : (() => {
                 const now = new Date();
                 now.setHours(0, 0, 0, 0);
-                const twoWeeksFromNow = new Date(now);
-                twoWeeksFromNow.setDate(twoWeeksFromNow.getDate() + 14);
 
+                // Show all upcoming exams in the current term (not just 2 weeks)
                 const upcomingExams = (examSchedules as any[])
                   .filter((exam: any) => {
                     const examDate = new Date(exam.examDate);
                     examDate.setHours(0, 0, 0, 0);
-                    return examDate >= now && examDate <= twoWeeksFromNow;
+                    return examDate >= now; // Show all future exams in current term
                   })
                   .sort((a: any, b: any) => {
                     const dateA = new Date(a.examDate);
@@ -788,9 +788,9 @@ export function StudentDashboard() {
                   return (
                     <div className="flex flex-col items-center justify-center py-8 text-center">
                       <CalendarDays className="w-12 h-12 text-gray-300 dark:text-gray-600 mb-3" />
-                      <p className="text-gray-600 dark:text-gray-400 font-medium mb-1">No exams in the next 2 weeks</p>
+                      <p className="text-gray-600 dark:text-gray-400 font-medium mb-1">No upcoming exams in the current term</p>
                       <p className="text-sm text-gray-500 dark:text-gray-500">
-                        Check back later for upcoming exam schedules
+                        Exam schedules will appear here when available
                       </p>
                     </div>
                   );

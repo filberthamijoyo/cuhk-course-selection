@@ -4662,3 +4662,343 @@ export const createEvent = async (req: AuthRequest, res: Response): Promise<void
   }
 };
 
+/**
+ * ===================
+ * EXAM SCHEDULE MANAGEMENT
+ * ===================
+ */
+
+/**
+ * Get all exam schedules
+ * GET /api/admin/exam-schedules
+ */
+export const getAllExamSchedules = async (req: AuthRequest, res: Response): Promise<void> => {
+  try {
+    const { term, year, courseCode } = req.query;
+    
+    const where: any = {};
+    
+    if (term) {
+      where.term = getFirstQueryValue(term as string | string[] | undefined);
+    }
+    
+    if (year) {
+      where.year = parseIntegerParam(year as string | string[] | undefined);
+    }
+    
+    if (courseCode) {
+      where.course_code = getFirstQueryValue(courseCode as string | string[] | undefined);
+    }
+    
+    const examSchedules = await (prisma as any).exam_schedules.findMany({
+      where,
+      orderBy: [
+        { exam_date: 'asc' },
+        { start_time: 'asc' }
+      ],
+      include: {
+        courses: {
+          select: {
+            id: true,
+            course_code: true,
+            course_name: true,
+            department: true,
+            credits: true,
+          }
+        }
+      }
+    });
+    
+    res.status(200).json({
+      success: true,
+      data: examSchedules.map((exam: any) => ({
+        id: exam.id,
+        courseId: exam.course_id,
+        courseCode: exam.course_code,
+        courseName: exam.course_name,
+        examDate: exam.exam_date,
+        startTime: exam.start_time,
+        endTime: exam.end_time,
+        location: exam.location,
+        term: exam.term,
+        year: exam.year,
+        course: exam.courses,
+        createdAt: exam.created_at,
+        updatedAt: exam.updated_at,
+      }))
+    });
+  } catch (error: any) {
+    res.status(500).json({
+      success: false,
+      error: error.message || 'Failed to get exam schedules'
+    });
+  }
+};
+
+/**
+ * Get exam schedule by ID
+ * GET /api/admin/exam-schedules/:id
+ */
+export const getExamScheduleById = async (req: AuthRequest, res: Response): Promise<void> => {
+  try {
+    const { id } = req.params;
+    
+    const examSchedule = await (prisma as any).exam_schedules.findUnique({
+      where: { id: parseInt(id, 10) },
+      include: {
+        courses: {
+          select: {
+            id: true,
+            course_code: true,
+            course_name: true,
+            department: true,
+            credits: true,
+          }
+        }
+      }
+    });
+    
+    if (!examSchedule) {
+      throw new NotFoundError('Exam schedule not found');
+    }
+    
+    res.status(200).json({
+      success: true,
+      data: {
+        id: examSchedule.id,
+        courseId: examSchedule.course_id,
+        courseCode: examSchedule.course_code,
+        courseName: examSchedule.course_name,
+        examDate: examSchedule.exam_date,
+        startTime: examSchedule.start_time,
+        endTime: examSchedule.end_time,
+        location: examSchedule.location,
+        term: examSchedule.term,
+        year: examSchedule.year,
+        course: examSchedule.courses,
+        createdAt: examSchedule.created_at,
+        updatedAt: examSchedule.updated_at,
+      }
+    });
+  } catch (error: any) {
+    if (error instanceof NotFoundError) {
+      res.status(404).json({
+        success: false,
+        error: error.message
+      });
+    } else {
+      res.status(500).json({
+        success: false,
+        error: error.message || 'Failed to get exam schedule'
+      });
+    }
+  }
+};
+
+/**
+ * Create exam schedule
+ * POST /api/admin/exam-schedules
+ */
+export const createExamSchedule = async (req: AuthRequest, res: Response): Promise<void> => {
+  try {
+    const {
+      course_id,
+      course_code,
+      course_name,
+      exam_date,
+      start_time,
+      end_time,
+      location,
+      term,
+      year,
+    } = req.body;
+    
+    // Validation
+    if (!course_code || !course_name || !exam_date || !term || !year) {
+      throw new BadRequestError('Missing required fields: course_code, course_name, exam_date, term, year');
+    }
+    
+    // If course_id is provided, verify the course exists
+    if (course_id) {
+      const course = await prisma.courses.findUnique({
+        where: { id: course_id }
+      });
+      
+      if (!course) {
+        throw new NotFoundError('Course not found');
+      }
+    }
+    
+    const examSchedule = await (prisma as any).exam_schedules.create({
+      data: {
+        course_id: course_id || null,
+        course_code,
+        course_name,
+        exam_date: new Date(exam_date),
+        start_time: start_time || null,
+        end_time: end_time || null,
+        location: location || null,
+        term,
+        year: parseInt(year, 10),
+      }
+    });
+    
+    res.status(201).json({
+      success: true,
+      data: {
+        id: examSchedule.id,
+        courseId: examSchedule.course_id,
+        courseCode: examSchedule.course_code,
+        courseName: examSchedule.course_name,
+        examDate: examSchedule.exam_date,
+        startTime: examSchedule.start_time,
+        endTime: examSchedule.end_time,
+        location: examSchedule.location,
+        term: examSchedule.term,
+        year: examSchedule.year,
+        createdAt: examSchedule.created_at,
+        updatedAt: examSchedule.updated_at,
+      }
+    });
+  } catch (error: any) {
+    if (error instanceof BadRequestError || error instanceof NotFoundError) {
+      res.status(error instanceof BadRequestError ? 400 : 404).json({
+        success: false,
+        error: error.message
+      });
+    } else {
+      res.status(500).json({
+        success: false,
+        error: error.message || 'Failed to create exam schedule'
+      });
+    }
+  }
+};
+
+/**
+ * Update exam schedule
+ * PUT /api/admin/exam-schedules/:id
+ */
+export const updateExamSchedule = async (req: AuthRequest, res: Response): Promise<void> => {
+  try {
+    const { id } = req.params;
+    const {
+      course_id,
+      course_code,
+      course_name,
+      exam_date,
+      start_time,
+      end_time,
+      location,
+      term,
+      year,
+    } = req.body;
+    
+    // Check if exam schedule exists
+    const existing = await (prisma as any).exam_schedules.findUnique({
+      where: { id: parseInt(id, 10) }
+    });
+    
+    if (!existing) {
+      throw new NotFoundError('Exam schedule not found');
+    }
+    
+    // If course_id is provided, verify the course exists
+    if (course_id) {
+      const course = await prisma.courses.findUnique({
+        where: { id: course_id }
+      });
+      
+      if (!course) {
+        throw new NotFoundError('Course not found');
+      }
+    }
+    
+    const updateData: any = {};
+    
+    if (course_id !== undefined) updateData.course_id = course_id || null;
+    if (course_code !== undefined) updateData.course_code = course_code;
+    if (course_name !== undefined) updateData.course_name = course_name;
+    if (exam_date !== undefined) updateData.exam_date = new Date(exam_date);
+    if (start_time !== undefined) updateData.start_time = start_time || null;
+    if (end_time !== undefined) updateData.end_time = end_time || null;
+    if (location !== undefined) updateData.location = location || null;
+    if (term !== undefined) updateData.term = term;
+    if (year !== undefined) updateData.year = parseInt(year, 10);
+    
+    const examSchedule = await (prisma as any).exam_schedules.update({
+      where: { id: parseInt(id, 10) },
+      data: updateData
+    });
+    
+    res.status(200).json({
+      success: true,
+      data: {
+        id: examSchedule.id,
+        courseId: examSchedule.course_id,
+        courseCode: examSchedule.course_code,
+        courseName: examSchedule.course_name,
+        examDate: examSchedule.exam_date,
+        startTime: examSchedule.start_time,
+        endTime: examSchedule.end_time,
+        location: examSchedule.location,
+        term: examSchedule.term,
+        year: examSchedule.year,
+        createdAt: examSchedule.created_at,
+        updatedAt: examSchedule.updated_at,
+      }
+    });
+  } catch (error: any) {
+    if (error instanceof NotFoundError) {
+      res.status(404).json({
+        success: false,
+        error: error.message
+      });
+    } else {
+      res.status(500).json({
+        success: false,
+        error: error.message || 'Failed to update exam schedule'
+      });
+    }
+  }
+};
+
+/**
+ * Delete exam schedule
+ * DELETE /api/admin/exam-schedules/:id
+ */
+export const deleteExamSchedule = async (req: AuthRequest, res: Response): Promise<void> => {
+  try {
+    const { id } = req.params;
+    
+    const examSchedule = await (prisma as any).exam_schedules.findUnique({
+      where: { id: parseInt(id, 10) }
+    });
+    
+    if (!examSchedule) {
+      throw new NotFoundError('Exam schedule not found');
+    }
+    
+    await (prisma as any).exam_schedules.delete({
+      where: { id: parseInt(id, 10) }
+    });
+    
+    res.status(200).json({
+      success: true,
+      message: 'Exam schedule deleted successfully'
+    });
+  } catch (error: any) {
+    if (error instanceof NotFoundError) {
+      res.status(404).json({
+        success: false,
+        error: error.message
+      });
+    } else {
+      res.status(500).json({
+        success: false,
+        error: error.message || 'Failed to delete exam schedule'
+      });
+    }
+  }
+};
+

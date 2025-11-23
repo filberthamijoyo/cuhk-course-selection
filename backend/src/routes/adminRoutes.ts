@@ -68,6 +68,12 @@ import {
   // Campus Information
   createAnnouncement,
   createEvent,
+  // Exam Schedule Management
+  getAllExamSchedules,
+  getExamScheduleById,
+  createExamSchedule,
+  updateExamSchedule,
+  deleteExamSchedule,
 } from '../controllers/adminController';
 import { authenticate, requireAdmin } from '../middleware/auth';
 import { adminLimiter } from '../middleware/rateLimiter';
@@ -553,5 +559,46 @@ router.post('/announcements', asyncHandler(createAnnouncement));
  * @access  Private (Admin)
  */
 router.post('/events', asyncHandler(createEvent));
+
+/**
+ * ===================
+ * EXAM SCHEDULE MANAGEMENT
+ * ===================
+ */
+
+/**
+ * @route   GET /api/admin/exam-schedules
+ * @desc    Get all exam schedules
+ * @access  Private (Admin)
+ */
+router.get('/exam-schedules', asyncHandler(getAllExamSchedules));
+
+/**
+ * @route   GET /api/admin/exam-schedules/:id
+ * @desc    Get exam schedule by ID
+ * @access  Private (Admin)
+ */
+router.get('/exam-schedules/:id', asyncHandler(getExamScheduleById));
+
+/**
+ * @route   POST /api/admin/exam-schedules
+ * @desc    Create a new exam schedule
+ * @access  Private (Admin)
+ */
+router.post('/exam-schedules', asyncHandler(createExamSchedule));
+
+/**
+ * @route   PUT /api/admin/exam-schedules/:id
+ * @desc    Update exam schedule
+ * @access  Private (Admin)
+ */
+router.put('/exam-schedules/:id', asyncHandler(updateExamSchedule));
+
+/**
+ * @route   DELETE /api/admin/exam-schedules/:id
+ * @desc    Delete exam schedule
+ * @access  Private (Admin)
+ */
+router.delete('/exam-schedules/:id', asyncHandler(deleteExamSchedule));
 
 export default router;
